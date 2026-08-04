@@ -110,6 +110,7 @@ A large change means the removed cell was load-bearing context; a change near ze
 Pretrained RT-J models are available from [RelativeDB on the Hugging Face Hub][#models]. Each repository contains both `classification/` and `regression/` checkpoints. Classification is loaded by default; select the regression checkpoint with `RelationalTransformer(..., task="regression")`.
 
 - [`RelativeDB/rt-j-fp16`](https://huggingface.co/RelativeDB/rt-j-fp16) — half-precision weights
+- [`RelativeDB/rt-j-fp8`](https://huggingface.co/RelativeDB/rt-j-fp8) — native E4M3 FP8 matrix weights
 - [`RelativeDB/rt-j-int8`](https://huggingface.co/RelativeDB/rt-j-int8) — 8-bit quantized weights
 - [`RelativeDB/rt-j-int4`](https://huggingface.co/RelativeDB/rt-j-int4) — 4-bit quantized weights
 - [Prediction](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/usage/prediction.html)
@@ -223,6 +224,12 @@ Some highlights across the different types of training are:
 
 The runnable [issue prediction example](https://github.com/RelativeDB/relational-transformers/blob/main/examples/predict_issue.py) shows the complete path from externally encoded column/value vectors to a prediction. RelativeDB is the first production integration: it retrieves related rows, constructs typed `RelationalBatch` inputs, and selects the PyTorch, Triton, ONNX, or native serving path.
 
+## Companion Resources
+
+- [RelativeDB models on Hugging Face](https://huggingface.co/RelativeDB)
+- [RelativeDB](https://github.com/RelativeDB/RelQL), the reference retrieval and context-construction integration
+- [RT-J](https://huggingface.co/stanford-star/rt-j), the upstream relational foundation model
+
 ## Development setup
 
 After cloning the repository (or a fork), install it in editable mode with the development dependencies:
@@ -262,6 +269,10 @@ If you find Relational Transformers useful in your research or application, you 
 ```
 
 Don't hesitate to open an issue if something is broken or if you have questions about using your own embedding pipeline.
+
+### Maintainers
+
+Relational Transformers is maintained by RelativeDB.
 
 ## License
 

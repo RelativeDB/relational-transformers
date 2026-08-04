@@ -11,7 +11,8 @@ from typing import Any
 
 import torch
 from torch import Tensor, nn
-from torch.nn import functional as F
+
+from .losses import loss_for
 
 
 @dataclass
@@ -70,15 +71,7 @@ class TaskHead(nn.Module):
 
 
 def _loss(logits: Tensor, labels: Tensor, problem_type: str) -> Tensor:
-    if problem_type == "binary":
-        return F.binary_cross_entropy_with_logits(logits.reshape(-1), labels.float().reshape(-1))
-    if problem_type == "multiclass":
-        return F.cross_entropy(logits, labels.long())
-    if problem_type == "multilabel":
-        return F.binary_cross_entropy_with_logits(logits, labels.float())
-    if problem_type in ("regression", "forecasting"):
-        return F.huber_loss(logits.reshape(-1), labels.float().reshape(-1))
-    raise ValueError(f"unsupported problem_type {problem_type!r}")
+    return loss_for(problem_type)(logits, labels)
 
 
 def fit_head(

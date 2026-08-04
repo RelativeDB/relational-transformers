@@ -28,3 +28,18 @@ def test_triton_matches_pytorch_on_related_customer_context(customer_context_fac
     actual = triton_model.predict(context, activation="identity")
 
     assert actual == pytest.approx(expected, abs=5e-2)
+
+
+def test_fp8_triton_matches_portable_backend(customer_context_factory):
+    pytest.importorskip("triton")
+    fp8_path = os.environ.get("FP8_MODEL_PATH")
+    if not fp8_path:
+        pytest.skip("set FP8_MODEL_PATH to validate a local FP8 release artifact")
+    context = customer_context_factory(d_text=384)
+    portable = RelationalTransformer(fp8_path, backend="torch", device="cpu")
+    triton_model = RelationalTransformer(fp8_path, backend="triton")
+
+    expected = portable.predict(context, activation="identity")
+    actual = triton_model.predict(context, activation="identity")
+
+    assert actual == pytest.approx(expected, abs=5e-2)

@@ -67,6 +67,17 @@ def load_state(path: Path) -> dict[str, torch.Tensor]:
         state = state.get("model", state)
     else:
         state = load_file(str(path), device="cpu")
+    float8_types = tuple(
+        dtype
+        for dtype in (
+            getattr(torch, "float8_e4m3fn", None),
+            getattr(torch, "float8_e5m2", None),
+        )
+        if dtype is not None
+    )
+    state = {
+        key: value.float() if value.dtype in float8_types else value for key, value in state.items()
+    }
     adapted = {}
     for key, value in state.items():
         norm = (

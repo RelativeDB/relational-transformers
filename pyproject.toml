@@ -31,6 +31,9 @@ Documentation = "https://relational-transformers.readthedocs.io"
 Repository = "https://github.com/RelativeDB/relational-transformers"
 Issues = "https://github.com/RelativeDB/relational-transformers/issues"
 
+[project.scripts]
+relational-transformers-quantize = "relational_transformers.quantization:main"
+
 [tool.setuptools.packages.find]
 include = ["relational_transformers*"]
 
@@ -53,3 +56,15 @@ target-version = "py310"
 
 [tool.ruff.lint]
 select = ["E", "F", "I", "UP", "B"]
+
+[tool.coverage.run]
+source = ["relational_transformers"]
+omit = [
+  "relational_transformers/backends/triton_kernels.py",
+  "relational_transformers/backends/triton_model.py",
+]
+
+[tool.coverage.report]
+fail_under = 90
+show_missing = true
+skip_covered = true

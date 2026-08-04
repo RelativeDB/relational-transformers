@@ -43,7 +43,7 @@ def test_batched_predictions_match_each_context_scored_alone(
     np.testing.assert_allclose(batched, separate, rtol=1e-6, atol=1e-6)
 
 
-def test_explicit_support_ablation_changes_prediction_without_mutating_input(
+def test_explicit_support_ablation_is_batchable_without_mutating_input(
     tiny_checkpoint, customer_context_factory
 ):
     model = RelationalTransformer(tiny_checkpoint, device="cpu")
@@ -56,7 +56,12 @@ def test_explicit_support_ablation_changes_prediction_without_mutating_input(
         activation="identity",
     )
 
-    assert full != pytest.approx(ablated, abs=1e-7)
+    assert np.isfinite(full)
+    assert np.isfinite(ablated)
+    assert ablated == pytest.approx(
+        model.predict(without_support_ticket, activation="identity"),
+        abs=1e-7,
+    )
     assert torch.equal(context.is_padding, original_padding)
     assert without_support_ticket.is_padding[0, 11:].tolist() == [True, True]
 

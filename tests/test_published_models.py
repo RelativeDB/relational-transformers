@@ -21,6 +21,7 @@ pytestmark = [
     "model_id",
     [
         "RelativeDB/rt-j-fp16",
+        "RelativeDB/rt-j-fp8",
         "RelativeDB/rt-j-int8",
         "RelativeDB/rt-j-int4",
     ],
@@ -44,6 +45,19 @@ def test_published_regression_checkpoint_loads_and_scores(customer_context_facto
     prediction = model.predict(context)
 
     assert math.isfinite(prediction)
+
+
+def test_published_model_responds_to_explicit_support_ablation(customer_context_factory):
+    context = customer_context_factory(d_text=384)
+    without_support = context.ablate([11, 12])
+    model = RelationalTransformer("RelativeDB/rt-j-fp16", device="cpu")
+
+    full, ablated = model.predict(
+        [context, without_support],
+        activation="identity",
+    )
+
+    assert abs(float(full - ablated)) > 1e-6
 
 
 def test_published_meta_model_downloads_only_configuration():

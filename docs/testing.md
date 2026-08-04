@@ -8,6 +8,14 @@ It does not need network access or a GPU.
 pytest
 ```
 
+The portable coverage gate excludes CUDA-only Triton kernel implementations,
+which cannot execute on CPU CI, and requires at least 90% coverage. The current
+portable suite reports over 97%:
+
+```bash
+make coverage
+```
+
 The suite covers:
 
 - typed relational batches, wide production-style node IDs, foreign-key parents, and padding;

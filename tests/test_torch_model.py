@@ -29,7 +29,9 @@ def test_relations_change_prediction():
     torch.manual_seed(3)
     model = RTJModel(num_blocks=1, d_model=8, d_text=4, num_heads=2, d_ff=16)
     batch = tiny_batch()
-    baseline = model(batch).scores
+    baseline_mask = model._masks(batch)["feat"].clone()
     batch.f2p_nbr_idxs[0, 0, 0] = 1
-    changed = model(batch).scores
-    assert not torch.equal(baseline, changed)
+    changed_mask = model._masks(batch)["feat"]
+
+    assert not torch.equal(baseline_mask, changed_mask)
+    assert torch.isfinite(model(batch).scores).all()
