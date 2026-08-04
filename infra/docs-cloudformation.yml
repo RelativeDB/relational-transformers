@@ -112,7 +112,9 @@ Resources:
             Condition:
               StringEquals:
                 token.actions.githubusercontent.com:aud: sts.amazonaws.com
-                token.actions.githubusercontent.com:sub: repo:RelativeDB/relational-transformers:environment:docs
+                token.actions.githubusercontent.com:sub:
+                  - repo:RelativeDB/relational-transformers:environment:docs
+                  - repo:RelativeDB@306372328/relational-transformers@1323327524:environment:docs
       Policies:
         - PolicyName: deploy-documentation
           PolicyDocument:
