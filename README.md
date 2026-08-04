@@ -107,12 +107,13 @@ A large change means the removed cell was load-bearing context; a change near ze
 
 ## Pre-Trained Models
 
-Pretrained RT-J models are available from [RelativeDB on the Hugging Face Hub][#models]. Each repository contains both `classification/` and `regression/` checkpoints. Classification is loaded by default; select the regression checkpoint with `RelationalTransformer(..., task="regression")`.
+Pretrained RT-J models and deployment artifacts are available from [RelativeDB on the Hugging Face Hub][#models]. Each weight repository contains both `classification/` and `regression/` checkpoints. Classification is loaded by default; select the regression checkpoint with `RelationalTransformer(..., task="regression")`.
 
 - [`RelativeDB/rt-j-fp16`](https://huggingface.co/RelativeDB/rt-j-fp16) — half-precision weights
 - [`RelativeDB/rt-j-fp8`](https://huggingface.co/RelativeDB/rt-j-fp8) — native E4M3 FP8 matrix weights
 - [`RelativeDB/rt-j-int8`](https://huggingface.co/RelativeDB/rt-j-int8) — 8-bit quantized weights
 - [`RelativeDB/rt-j-int4`](https://huggingface.co/RelativeDB/rt-j-int4) — 4-bit quantized weights
+- [`RelativeDB/rt-j-onnx`](https://huggingface.co/RelativeDB/rt-j-onnx) — full RT-J export for ONNX Runtime
 - [Prediction](https://relationaltransformers.com/docs/relational_transformer/usage/prediction.html)
 - [Batches and the Model Input Contract](https://relationaltransformers.com/docs/relational_transformer/usage/batches.html)
 - [Custom and Local Models](https://relationaltransformers.com/docs/relational_transformer/usage/custom_models.html)
@@ -138,9 +139,12 @@ print(model.get_model_kwargs())
 The published ONNX model downloads automatically from Hugging Face:
 
 ```python
-onnx_model = RelationalTransformer(backend="onnx")
+onnx_model = RelationalTransformer("RelativeDB/rt-j-onnx", backend="onnx")
 predictions = onnx_model.predict(batch)
 ```
+
+`RelativeDB/rt-j-onnx` is also the default when you omit the model name and select
+`backend="onnx"`.
 
 You can also export a loaded PyTorch checkpoint and open the local result:
 
