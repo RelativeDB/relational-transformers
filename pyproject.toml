@@ -40,6 +40,12 @@ relational_transformers = ["py.typed"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 addopts = "-ra"
+markers = [
+  "cuda: requires a CUDA device and optional Triton dependencies",
+  "hub: downloads and validates published Hugging Face checkpoints",
+  "onnx: requires the optional ONNX export and runtime dependencies",
+  "slow: takes materially longer than the default unit tests",
+]
 
 [tool.ruff]
 line-length = 100

@@ -71,13 +71,13 @@ class TaskHead(nn.Module):
 
 def _loss(logits: Tensor, labels: Tensor, problem_type: str) -> Tensor:
     if problem_type == "binary":
-        return F.binary_cross_entropy_with_logits(logits.squeeze(-1), labels.float())
+        return F.binary_cross_entropy_with_logits(logits.reshape(-1), labels.float().reshape(-1))
     if problem_type == "multiclass":
         return F.cross_entropy(logits, labels.long())
     if problem_type == "multilabel":
         return F.binary_cross_entropy_with_logits(logits, labels.float())
     if problem_type in ("regression", "forecasting"):
-        return F.huber_loss(logits.squeeze(-1), labels.float())
+        return F.huber_loss(logits.reshape(-1), labels.float().reshape(-1))
     raise ValueError(f"unsupported problem_type {problem_type!r}")
 
 

@@ -82,9 +82,9 @@ class RelationalBatch:
             raise ValueError("sem_types values must be in [0, 3]")
         if (self.is_targets & self.is_padding).any():
             raise ValueError("a padding cell cannot be a target")
-        if (
-            not torch.isfinite(self.number_values).all()
-            or not torch.isfinite(self.datetime_values).all()
+        if any(
+            not torch.isfinite(getattr(self, name)).all()
+            for name in ("number_values", "datetime_values", "boolean_values")
         ):
             raise ValueError("scalar channels must be finite")
         if (

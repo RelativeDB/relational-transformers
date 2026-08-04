@@ -10,6 +10,7 @@ owns the model.
    :caption: Documentation
 
    docs/installation
+   docs/testing
    docs/quickstart
    docs/relational_transformer/usage/prediction
    docs/relational_transformer/usage/batches

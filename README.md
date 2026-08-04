@@ -238,6 +238,10 @@ To test your changes, run:
 pytest
 ```
 
+This runs deterministic, offline tests over typed customer, order, and support
+contexts. To validate the published Hugging Face checkpoints or compare Triton
+with PyTorch on CUDA, see the [Testing guide](https://relational-transformers.readthedocs.io/en/latest/docs/testing.html).
+
 To build the documentation, run:
 
 ```bash
