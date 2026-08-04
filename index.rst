@@ -12,6 +12,7 @@ owns the model.
    docs/installation
    docs/testing
    docs/quickstart
+   examples/README
    docs/relational_transformer/usage/usage
    docs/relational_transformer/usage/prediction
    docs/relational_transformer/usage/batches
