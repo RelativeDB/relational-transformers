@@ -5,21 +5,9 @@ Every workflow below has a complete runnable script in the
 
 ## Head Tuning
 
-Fit a binary churn head without changing the backbone:
-
-```python
-head = model.fit_head(
-    training_examples,
-    task="churn",
-    problem_type="binary",
-    epochs=100,
-    learning_rate=1e-3,
-)
-head.save_pretrained("models/churn-head")
-probabilities = model.predict(contexts, task_head="churn")
-```
-
-Script: [tune_issue_head.py](https://github.com/RelativeDB/relational-transformers/blob/main/examples/tune_issue_head.py)
+[Task-head tuning](head_tuning.md) documents the workflow, and
+[tune_issue_head.py](https://github.com/RelativeDB/relational-transformers/blob/main/examples/tune_issue_head.py)
+runs it end to end over a frozen backbone.
 
 ## Multiclass Classification
 

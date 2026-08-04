@@ -40,6 +40,18 @@ distribution = model.predict(batch, task_head="issue_label")
 The head runs over frozen target features. The published scalar decoder stays available
 by omitting `task_head`.
 
+## Contextual Cell Embeddings
+
+`model.encode(context)` returns one contextualized state per cell, shaped
+`[batch, cells, 512]` for the published models. Pass
+`output_value="target_features"` for the summed `[batch, 512]` target representation
+that task heads train on.
+
+```python
+states = model.encode(batch)                                    # [B, S, 512]
+features = model.encode(batch, output_value="target_features")  # [B, 512]
+```
+
 ## Model Outputs
 
 Use `forward` when a consumer needs a lower-level output than `predict` exposes:

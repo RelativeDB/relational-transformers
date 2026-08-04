@@ -101,6 +101,7 @@ the trainer derives a default from the loaded checkpoint: regression tasks get
 | `gradient_accumulation_steps` | `1` | mini-batches per optimizer step |
 | `seed` | `42` | shuffle and torch seeding |
 | `logging_steps` | `10` | reserved for loss logging cadence |
+| `training_backend` | `"torch"` | `"triton"` compiles the training graphs to Triton CUDA kernels |
 | `save_strategy` | `"epoch"` | `"epoch"` saves after each epoch; anything else skips saving |
 
 Gradient accumulation buys effective batch sizes larger than device memory: with
