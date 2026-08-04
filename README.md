@@ -10,7 +10,7 @@
 
 # Relational Transformers: Prediction and Fine-Tuning over Related Data
 
-This framework provides an easy method to run and train relational transformer models over user-provided embeddings. It can be used to make predictions from sets of related cells ([quickstart](https://relational-transformers.readthedocs.io/en/latest/docs/quickstart.html#load-rt-j)), measure which parts of a context affect those predictions ([ablation](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/usage/ablation.html)), fit lightweight task heads ([training overview](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/training/overview.html#head-tuning)), or fine-tune a complete model ([training overview](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/training/overview.html#full-fine-tuning)). This supports binary and multiclass classification, regression, forecasting, multilabel ranking, and other prediction tasks over related data.
+This framework provides an easy method to run and train relational transformer models over user-provided embeddings. It can be used to make predictions from sets of related cells ([quickstart](https://relationaltransformers.com/docs/quickstart.html#load-rt-j)), measure which parts of a context affect those predictions ([ablation](https://relationaltransformers.com/docs/relational_transformer/usage/ablation.html)), fit lightweight task heads ([training overview](https://relationaltransformers.com/docs/relational_transformer/training/overview.html#head-tuning)), or fine-tune a complete model ([training overview](https://relationaltransformers.com/docs/relational_transformer/training/overview.html#full-fine-tuning)). This supports binary and multiclass classification, regression, forecasting, multilabel ranking, and other prediction tasks over related data.
 
 Unlike frameworks that start with raw text or tables, Relational Transformers starts with **embeddings that you have already created**. You choose how strings, numbers, timestamps, images, categories, and domain objects become vectors. The framework handles typed relations, batching, relational attention, training, evaluation, and model checkpoints. It never silently downloads an encoding model or couples your model to a particular database.
 
@@ -30,11 +30,11 @@ We recommend **Python 3.10+** and **[PyTorch 2.2+](https://pytorch.org/get-start
 pip install -U relational-transformers
 ```
 
-See [Installation](https://relational-transformers.readthedocs.io/en/latest/docs/installation.html) in the docs for source and editable installs and the ONNX, Triton, documentation, and development extras.
+See [Installation](https://relationaltransformers.com/docs/installation.html) in the docs for source and editable installs and the ONNX, Triton, documentation, and development extras.
 
 ## Getting Started
 
-See [Quickstart](https://relational-transformers.readthedocs.io/en/latest/docs/quickstart.html) in our documentation.
+See [Quickstart](https://relationaltransformers.com/docs/quickstart.html) in our documentation.
 
 ### Relational Prediction Models
 
@@ -85,7 +85,7 @@ probability = float(model.predict(cell_vectors, target=0))
 print(f"P(issue is a bug) = {probability:.1%}")
 ```
 
-And that's already it. RT-J receives only the `[column_embedding, value_embedding]` vectors; it never receives the issue dictionary or its strings. `target=0` marks `bug_target_vector` as the masked prediction target. RelativeDB will construct this same model-ready representation from its schema and retrieved context before calling this library. Pass a list of vector arrays to batch several issues. See [Encoding Cells](https://relational-transformers.readthedocs.io/en/latest/docs/quickstart.html#encoding-cells) for the full typed-cell contract.
+And that's already it. RT-J receives only the `[column_embedding, value_embedding]` vectors; it never receives the issue dictionary or its strings. `target=0` marks `bug_target_vector` as the masked prediction target. RelativeDB will construct this same model-ready representation from its schema and retrieved context before calling this library. Pass a list of vector arrays to batch several issues. See [Encoding Cells](https://relationaltransformers.com/docs/quickstart.html#encoding-cells) for the full typed-cell contract.
 
 ### Ablation
 
@@ -113,9 +113,9 @@ Pretrained RT-J models are available from [RelativeDB on the Hugging Face Hub][#
 - [`RelativeDB/rt-j-fp8`](https://huggingface.co/RelativeDB/rt-j-fp8) — native E4M3 FP8 matrix weights
 - [`RelativeDB/rt-j-int8`](https://huggingface.co/RelativeDB/rt-j-int8) — 8-bit quantized weights
 - [`RelativeDB/rt-j-int4`](https://huggingface.co/RelativeDB/rt-j-int4) — 4-bit quantized weights
-- [Prediction](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/usage/prediction.html)
-- [Batches and the Model Input Contract](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/usage/batches.html)
-- [Custom and Local Models](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/usage/custom_models.html)
+- [Prediction](https://relationaltransformers.com/docs/relational_transformer/usage/prediction.html)
+- [Batches and the Model Input Contract](https://relationaltransformers.com/docs/relational_transformer/usage/batches.html)
+- [Custom and Local Models](https://relationaltransformers.com/docs/relational_transformer/usage/custom_models.html)
 
 The published configs specify RT-J's 384-wide text input, 512-wide hidden states, 12 transformer blocks, 8 attention heads, and expected `all-MiniLM-L12-v2` embedding space. Matching `d_text=384` alone is not an interoperability guarantee: inputs must use the embedding model, normalization, semantic conventions, and relational structure documented by the checkpoint. For a different embedding space, train an input adapter or fine-tune a checkpoint with appropriate data.
 
@@ -143,18 +143,18 @@ onnx_model = RelationalTransformer("rt-j.onnx", backend="onnx")
 predictions = onnx_model.predict(batch)
 ```
 
-See [Backends](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/usage/backends.html) for supported devices, ONNX dynamic axes, and Triton limitations.
+See [Backends](https://relationaltransformers.com/docs/relational_transformer/usage/backends.html) for supported devices, ONNX dynamic axes, and Triton limitations.
 
 ## Training
 
 This framework allows you to adapt relational transformer models to your own feature pipeline and task. You can fit a small multiclass or multilabel-ranking head over a frozen backbone, fine-tune the complete model for scalar binary or regression tasks with `RelationalTrainer`, or use the model in an ordinary PyTorch loop.
 
 - **Task-Head Tuning**
-  - [Frozen-Backbone Head Tuning](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/training/head_tuning.html)
+  - [Frozen-Backbone Head Tuning](https://relationaltransformers.com/docs/relational_transformer/training/head_tuning.html)
 - **Full-Model Fine-Tuning**
-  - [Full-Model Fine-Tuning](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/training/full_finetuning.html)
+  - [Full-Model Fine-Tuning](https://relationaltransformers.com/docs/relational_transformer/training/full_finetuning.html)
 - **Custom Models**
-  - [Custom Models and Local Checkpoints](https://relational-transformers.readthedocs.io/en/latest/docs/relational_transformer/usage/custom_models.html)
+  - [Custom Models and Local Checkpoints](https://relationaltransformers.com/docs/relational_transformer/usage/custom_models.html)
 
 A frozen-backbone head is the fastest adaptation path. Each training input is encoded once, then only the selected task head is optimized.
 
@@ -222,7 +222,18 @@ Some highlights across the different types of training are:
 
 ## Application Examples
 
-The runnable [issue prediction example](https://github.com/RelativeDB/relational-transformers/blob/main/examples/predict_issue.py) shows the complete path from externally encoded column/value vectors to a prediction. RelativeDB is the first production integration: it retrieves related rows, constructs typed `RelationalBatch` inputs, and selects the PyTorch, Triton, ONNX, or native serving path.
+The [examples directory](https://github.com/RelativeDB/relational-transformers/tree/main/examples) contains complete, runnable workflows:
+
+- [Issue prediction](https://github.com/RelativeDB/relational-transformers/blob/main/examples/predict_issue.py) builds externally encoded column/value vectors and predicts a real label.
+- [Batched prediction](https://github.com/RelativeDB/relational-transformers/blob/main/examples/batch_predictions.py) scores variable-length contexts together.
+- [Typed customer churn](https://github.com/RelativeDB/relational-transformers/blob/main/examples/typed_customer_churn.py) constructs scalar, text, table, node, and foreign-key tensors explicitly.
+- [Support-history ablation](https://github.com/RelativeDB/relational-transformers/blob/main/examples/ablate_support_history.py) compares caller-defined contexts.
+- [Evaluation](https://github.com/RelativeDB/relational-transformers/blob/main/examples/evaluate_churn.py) combines classification and ablation metrics.
+- [Task-head tuning](https://github.com/RelativeDB/relational-transformers/blob/main/examples/tune_issue_head.py) trains a multiclass issue head over a frozen backbone.
+- [Full fine-tuning](https://github.com/RelativeDB/relational-transformers/blob/main/examples/finetune_churn.py) adapts the complete model with mini-batches.
+- [ONNX export](https://github.com/RelativeDB/relational-transformers/blob/main/examples/export_onnx.py), [meta inspection](https://github.com/RelativeDB/relational-transformers/blob/main/examples/inspect_meta_model.py), [Triton FP8 inference](https://github.com/RelativeDB/relational-transformers/blob/main/examples/triton_fp8_inference.py), and [FP8 quantization](https://github.com/RelativeDB/relational-transformers/blob/main/examples/quantize_fp8.py) cover deployment workflows.
+
+RelativeDB is the first production integration: it retrieves related rows, constructs typed `RelationalBatch` inputs, and selects the PyTorch, Triton, ONNX, or native serving path.
 
 ## Companion Resources
 
@@ -247,7 +258,7 @@ pytest
 
 This runs deterministic, offline tests over typed customer, order, and support
 contexts. To validate the published Hugging Face checkpoints or compare Triton
-with PyTorch on CUDA, see the [Testing guide](https://relational-transformers.readthedocs.io/en/latest/docs/testing.html).
+with PyTorch on CUDA, see the [Testing guide](https://relationaltransformers.com/docs/testing.html).
 
 To build the documentation, run:
 
@@ -278,7 +289,7 @@ Relational Transformers is maintained by RelativeDB.
 
 Relational Transformers is licensed under the [Apache License 2.0][#github-license].
 
-[#docs-package]: https://relational-transformers.readthedocs.io/
+[#docs-package]: https://relationaltransformers.com/
 [#github-license]: https://github.com/RelativeDB/relational-transformers/blob/main/LICENSE
 [#models]: https://huggingface.co/RelativeDB
 [#pypi-package]: https://pypi.org/project/relational-transformers/
