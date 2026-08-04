@@ -37,3 +37,14 @@ def test_mapping_accepts_flat_scalar_channels():
     assert normalized.number_values.shape == (1, 3, 1)
     assert normalized.datetime_values.shape == (1, 3, 1)
     assert normalized.boolean_values.shape == (1, 3, 1)
+
+
+def test_numpy_widens_bfloat16_value_channels():
+    batch = RelationalBatch.from_text_cells(np.ones((3, 8), np.float32), target=0)
+    batch.text_values = batch.text_values.to(torch.bfloat16)
+    batch.col_name_values = batch.col_name_values.to(torch.bfloat16)
+
+    values = batch.numpy()
+
+    assert values["text_values"].dtype == np.float32
+    assert values["col_name_values"].dtype == np.float32

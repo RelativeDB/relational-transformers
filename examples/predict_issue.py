@@ -15,4 +15,5 @@ cells = issue_cells(
     comment="Restarting the process temporarily fixes it.",
 )
 probability = model.predict(cells, target=0)
+assert 0.0 <= probability <= 1.0
 print(f"P(issue is a bug) = {probability:.1%}")

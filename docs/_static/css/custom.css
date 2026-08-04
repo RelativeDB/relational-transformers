@@ -1,0 +1,41 @@
+.wy-nav-content {
+    max-width: 1120px;
+}
+
+/* Keep autodoc signatures and their bodies from collapsing to content width. */
+dl.class > dt,
+dd > dl {
+    width: 100%;
+}
+
+/* Card row used on overview pages. */
+.components {
+    display: flex;
+    flex-flow: row wrap;
+    gap: 0.8rem;
+    margin-bottom: 1rem;
+}
+
+.components > .box {
+    flex: 0 0 auto;
+    width: 11rem;
+    padding: 0.8rem;
+    border: 1px solid #d0d5da;
+    border-radius: 0.4rem;
+    background-color: #f6f8f9;
+    color: #404040;
+}
+
+.components > .box > .header {
+    padding: 0.35rem 0.2rem;
+    border-radius: 0.3rem;
+    margin-bottom: 0.5rem;
+    text-align: center;
+    font-weight: bold;
+    color: white;
+    background-color: #2980b9;
+}
+
+.components > .box.optional > .header {
+    background-color: #8d99a5;
+}

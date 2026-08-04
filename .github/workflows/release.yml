@@ -1,0 +1,134 @@
+name: Release
+
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build-and-verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Validate tag and package version
+        run: |
+          package_version="$(python -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')"
+          test "${GITHUB_REF_NAME}" = "v${package_version}"
+      - name: Install release dependencies
+        run: python -m pip install -e '.[dev,docs,examples]' build twine
+      - name: Lint and test
+        run: |
+          python -m ruff check relational_transformers tests scripts examples
+          python -m pytest -m 'not hub and not cuda' --cov --cov-report=term-missing
+          python -m sphinx -W -c docs -b html . docs/_build/html
+      - name: Run every portable example against the published model
+        env:
+          RUN_HUB_TESTS: "1"
+          RT_EXAMPLE_EPOCHS: "1"
+        run: python -m pytest tests/test_examples_end_to_end.py -k 'not export_onnx'
+      - name: Build and inspect distributions
+        run: |
+          python -m build
+          python -m twine check dist/*
+      - name: Export and verify published ONNX model
+        run: python scripts/export_release_onnx.py dist/rt-j-classification.onnx
+      - uses: actions/upload-artifact@v4
+        with:
+          name: python-distributions
+          path: |
+            dist/*.whl
+            dist/*.tar.gz
+          if-no-files-found: error
+      - uses: actions/upload-artifact@v4
+        with:
+          name: onnx-model
+          path: |
+            dist/*.onnx
+          if-no-files-found: error
+
+  github-release:
+    needs: build-and-verify
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: "{python-distributions,onnx-model}"
+          path: dist
+          merge-multiple: true
+      - name: Publish GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          generate_release_notes: true
+          body: |
+            Documentation: https://relationaltransformers.com/
+
+            The attached ONNX model was exported from `RelativeDB/rt-j-fp16` and
+            verified against PyTorch with dynamic batch and context lengths.
+          files: dist/*
+          fail_on_unmatched_files: true
+
+  pypi:
+    needs: build-and-verify
+    runs-on: ubuntu-latest
+    environment:
+      name: pypi
+      url: https://pypi.org/project/relational-transformers/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: python-distributions
+          path: dist
+      - name: Publish to PyPI with trusted publishing
+        uses: pypa/gh-action-pypi-publish@release/v1
+
+  huggingface:
+    needs: build-and-verify
+    runs-on: ubuntu-latest
+    environment:
+      name: huggingface
+      url: https://huggingface.co/RelativeDB/rt-j-onnx
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - uses: actions/download-artifact@v4
+        with:
+          name: onnx-model
+          path: dist
+      - name: Publish verified ONNX model to Hugging Face
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+        run: |
+          python -m pip install 'huggingface-hub>=0.23'
+          python - <<'PY'
+          from huggingface_hub import HfApi
+
+          api = HfApi()
+          repo_id = "RelativeDB/rt-j-onnx"
+          api.create_repo(repo_id, repo_type="model", exist_ok=True)
+          api.upload_file(
+              path_or_fileobj="dist/rt-j-classification.onnx",
+              path_in_repo="model.onnx",
+              repo_id=repo_id,
+              repo_type="model",
+              commit_message="Publish verified ONNX model",
+          )
+          api.upload_folder(
+              folder_path="release/huggingface/onnx",
+              path_in_repo="",
+              repo_id=repo_id,
+              repo_type="model",
+              commit_message="Update ONNX model metadata",
+          )
+          PY

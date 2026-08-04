@@ -4,7 +4,7 @@
 [![GitHub - License](https://img.shields.io/github/license/RelativeDB/relational-transformers?logo=github&style=flat&color=green)][#github-license]
 [![PyPI - Python Version](https://img.shields.io/pypi/pyversions/relational-transformers?logo=pypi&style=flat&color=blue)][#pypi-package]
 [![PyPI - Package Version](https://img.shields.io/pypi/v/relational-transformers?logo=pypi&style=flat&color=orange)][#pypi-package]
-[![Docs](https://img.shields.io/static/v1?logo=readthedocs&style=flat&color=pink&label=docs&message=relational-transformers)][#docs-package]
+[![Docs](https://img.shields.io/badge/docs-relationaltransformers.com-pink)][#docs-package]
 
 <!--- BADGES: END --->
 
@@ -27,7 +27,7 @@ For the **full documentation**, see **[Relational Transformers Documentation][#d
 We recommend **Python 3.10+** and **[PyTorch 2.2+](https://pytorch.org/get-started/locally/)**.
 
 ```bash
-pip install -U relational-transformers
+pip install -U relational-transformers sentence-transformers
 ```
 
 See [Installation](https://relationaltransformers.com/docs/installation.html) in the docs for source and editable installs and the ONNX, Triton, documentation, and development extras.
@@ -45,7 +45,7 @@ from sentence_transformers import SentenceTransformer
 from relational_transformers import RelationalTransformer
 
 text_encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L12-v2")
-model = RelationalTransformer("RelativeDB/rt-j-fp16")
+model = RelationalTransformer()
 ```
 
 Suppose your application needs to classify whether a GitHub issue is a bug. RT-J text cells have two separately encoded channels: the column and its value. Concatenate those two embeddings to build each model-ready cell vector. The masked target has a column embedding and a zero value channel.
@@ -135,13 +135,25 @@ model = RelationalTransformer("RelativeDB/rt-j-fp16", backend="meta")
 print(model.get_model_kwargs())
 ```
 
-Export a PyTorch model once and load the resulting file anywhere ONNX Runtime is available:
+The published ONNX model downloads automatically from Hugging Face:
 
 ```python
-torch_model.export_onnx("rt-j.onnx", example_batch)
-onnx_model = RelationalTransformer("rt-j.onnx", backend="onnx")
+onnx_model = RelationalTransformer(backend="onnx")
 predictions = onnx_model.predict(batch)
 ```
+
+You can also export a loaded PyTorch checkpoint and open the local result:
+
+```python
+torch_model = RelationalTransformer(device="cpu")
+torch_model.export_onnx("rt-j.onnx", example_batch)
+onnx_model = RelationalTransformer("rt-j.onnx", backend="onnx")
+```
+
+The release pipeline exports the published `RelativeDB/rt-j-fp16` checkpoint—not a
+reduced test model—and checks dynamic batch and context lengths for numerical parity
+before attaching the ONNX file to the GitHub release. The fast test suite separately
+exercises the same path with a small deterministic checkpoint.
 
 See [Backends](https://relationaltransformers.com/docs/relational_transformer/usage/backends.html) for supported devices, ONNX dynamic axes, and Triton limitations.
 
@@ -209,6 +221,11 @@ trainer = RelationalTrainer(
 trainer.train()
 ```
 
+On CUDA, set `training_backend="triton"` in
+`RelationalTrainingArguments` to compile the trainable PyTorch graph through
+TorchInductor's Triton code generation. The optimized `backend="triton"`
+constructor remains the lower-latency inference path.
+
 Some highlights across the different types of training are:
 
 - User-provided embeddings for text, numbers, categories, images, and other modalities
@@ -217,7 +234,6 @@ Some highlights across the different types of training are:
 - Full-model fine-tuning for scalar binary and regression tasks
 - Binary, multiclass, multilabel, regression, forecasting, and ranking objectives
 - Multi-task adaptation through named prediction heads
-- Frozen-head tuning and full-model PyTorch fine-tuning
 - Ordinary PyTorch modules and optimizers for custom training loops
 
 ## Application Examples
@@ -231,15 +247,15 @@ The [examples directory](https://github.com/RelativeDB/relational-transformers/t
 - [Evaluation](https://github.com/RelativeDB/relational-transformers/blob/main/examples/evaluate_churn.py) combines classification and ablation metrics.
 - [Task-head tuning](https://github.com/RelativeDB/relational-transformers/blob/main/examples/tune_issue_head.py) trains a multiclass issue head over a frozen backbone.
 - [Full fine-tuning](https://github.com/RelativeDB/relational-transformers/blob/main/examples/finetune_churn.py) adapts the complete model with mini-batches.
-- [ONNX export](https://github.com/RelativeDB/relational-transformers/blob/main/examples/export_onnx.py), [meta inspection](https://github.com/RelativeDB/relational-transformers/blob/main/examples/inspect_meta_model.py), [Triton FP8 inference](https://github.com/RelativeDB/relational-transformers/blob/main/examples/triton_fp8_inference.py), and [FP8 quantization](https://github.com/RelativeDB/relational-transformers/blob/main/examples/quantize_fp8.py) cover deployment workflows.
+- [ONNX export](https://github.com/RelativeDB/relational-transformers/blob/main/examples/export_onnx.py), [meta inspection](https://github.com/RelativeDB/relational-transformers/blob/main/examples/inspect_meta_model.py), and [Triton FP8 inference](https://github.com/RelativeDB/relational-transformers/blob/main/examples/triton_fp8_inference.py) cover deployment workflows.
 
-RelativeDB is the first production integration: it retrieves related rows, constructs typed `RelationalBatch` inputs, and selects the PyTorch, Triton, ONNX, or native serving path.
+RelativeDB is the first real-world integration: it retrieves related rows, constructs
+typed `RelationalBatch` inputs, and selects a supported serving path.
 
 ## Companion Resources
 
 - [RelativeDB models on Hugging Face](https://huggingface.co/RelativeDB)
-- [RelativeDB](https://github.com/RelativeDB/RelQL), the reference retrieval and context-construction integration
-- [RT-J](https://huggingface.co/stanford-star/rt-j), the upstream relational foundation model
+- [RelativeDB](https://github.com/RelativeDB/RelQL), the database retrieval and context-construction integration
 
 ## Development setup
 
@@ -247,7 +263,6 @@ After cloning the repository (or a fork), install it in editable mode with the d
 
 ```bash
 python -m pip install -e ".[dev]"
-pre-commit install
 ```
 
 To test your changes, run:

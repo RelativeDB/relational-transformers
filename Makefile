@@ -1,4 +1,4 @@
-.PHONY: test coverage lint docs docs-parity
+.PHONY: test coverage lint docs
 
 test:
 	python -m pytest
@@ -11,6 +11,3 @@ lint:
 
 docs:
 	python -m sphinx -W -c docs -b html . docs/_build/html
-
-docs-parity:
-	python scripts/compare_docs_headers.py

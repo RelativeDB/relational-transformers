@@ -21,13 +21,17 @@ from .constants import BATCH_FIELDS
 from .onnx import OnnxBackend, export_onnx
 from .torch_model import ModelOutput, RTJModel
 
+DEFAULT_MODEL = "RelativeDB/rt-j-fp16"
+DEFAULT_ONNX_MODEL = "RelativeDB/rt-j-onnx"
+
 
 class RelationalTransformer:
     """Load and run an RT-J checkpoint.
 
     Args:
         model_name_or_path: Hugging Face repository, local checkpoint directory,
-            or ONNX file.
+            or ONNX file. Defaults to :data:`DEFAULT_MODEL`, or
+            :data:`DEFAULT_ONNX_MODEL` for the ONNX backend.
         task: ``"classification"`` (default) or ``"regression"``.
         backend: ``"torch"``, ``"triton"``, ``"onnx"``, or ``"meta"``.
         device: PyTorch device. Auto-selects CUDA, MPS, then CPU.
@@ -35,7 +39,7 @@ class RelationalTransformer:
 
     def __init__(
         self,
-        model_name_or_path: str | Path,
+        model_name_or_path: str | Path | None = None,
         *,
         task: str = "classification",
         backend: str = "torch",
@@ -44,6 +48,8 @@ class RelationalTransformer:
         compile: bool = False,
         providers=None,
     ) -> None:
+        if model_name_or_path is None:
+            model_name_or_path = DEFAULT_ONNX_MODEL if backend == "onnx" else DEFAULT_MODEL
         self.model_name_or_path = str(model_name_or_path)
         self.task = task
         self.backend_name = backend
@@ -54,7 +60,9 @@ class RelationalTransformer:
         self.heads: dict[str, torch.nn.Module] = {}
 
         if backend == "onnx":
-            self.backend = OnnxBackend(model_name_or_path, providers=providers)
+            self.backend = OnnxBackend(
+                model_name_or_path, providers=providers, revision=revision
+            )
             return
         if backend == "meta":
             self.config = resolve_config(model_name_or_path, task=task, revision=revision)
@@ -66,8 +74,6 @@ class RelationalTransformer:
             model_name_or_path, task=task, revision=revision
         )
         if backend == "triton":
-            if task not in ("classification", "binary", "ranking", "clf"):
-                raise ValueError("the Triton backend currently serves classification target scores")
             from .backends.triton_model import RTJTriton
 
             self.backend = RTJTriton(checkpoint)
@@ -110,6 +116,22 @@ class RelationalTransformer:
         )
 
     def forward(self, inputs, *, output="target_scores", target=None) -> ModelOutput:
+        """Run the model and return the requested :class:`ModelOutput` view.
+
+        Args:
+            inputs: A :class:`RelationalBatch`, a mapping of canonical batch
+                fields, a ``[cells, 2*d_text]`` all-text cell array, or a
+                sequence of single-context inputs to collate.
+            output: ``"target_scores"``, ``"token_scores"``,
+                ``"target_features"``, ``"target_scores_and_text"``, or
+                ``"embeddings"``. The ONNX and Triton backends serve
+                ``"target_scores"`` only.
+            target: Target cell position(s), required only for raw cell
+                arrays.
+
+        Returns:
+            A :class:`ModelOutput` with torch tensors on every backend.
+        """
         batch = self._batch(inputs, target=target)
         if self.backend_name == "meta":
             raise RuntimeError("meta models inspect structure but cannot run inference")
@@ -133,6 +155,25 @@ class RelationalTransformer:
         activation: str | None = None,
         convert_to_numpy=True,
     ):
+        """Predict target values for one or more relational contexts.
+
+        Args:
+            inputs: Anything :meth:`forward` accepts.
+            target: Target cell position(s) for raw cell arrays.
+            task_head: Name of a head fitted with :meth:`fit_head`. When set,
+                the head runs over frozen ``target_features`` instead of the
+                published scalar decoder.
+            activation: ``None`` selects a default from the problem type:
+                sigmoid for binary, multilabel, and classification tasks,
+                softmax for multiclass heads, and identity for regression.
+                Pass ``"identity"`` to obtain raw logits.
+            convert_to_numpy: Return numpy values (a Python float for a
+                single context) instead of a torch tensor.
+
+        Returns:
+            Activated scores with one value per context, or one row per
+            context for multi-label heads.
+        """
         if task_head is not None:
             if task_head not in self.heads:
                 raise KeyError(f"no fitted task head named {task_head!r}")
@@ -162,23 +203,51 @@ class RelationalTransformer:
         return scores
 
     def encode(self, inputs, *, target=None, output_value="embeddings", convert_to_numpy=True):
+        """Return contextual cell states or the pooled target representation.
+
+        Args:
+            inputs: Anything :meth:`forward` accepts.
+            target: Target cell position(s) for raw cell arrays.
+            output_value: ``"embeddings"`` for one ``d_model``-wide state per
+                cell, or ``"target_features"`` for the summed target state
+                used by task heads.
+            convert_to_numpy: Return numpy arrays instead of torch tensors.
+        """
         output = "target_features" if output_value == "target_features" else "embeddings"
         result = self.forward(inputs, output=output, target=target)
         values = result.features if output == "target_features" else result.embeddings
         return values.detach().cpu().numpy() if convert_to_numpy else values
 
     def export_onnx(self, path, example, *, target=None, opset_version=18):
+        """Export target-score inference to ONNX with dynamic batch and cell axes.
+
+        Requires the torch backend. The example batch fixes ``d_text`` and the
+        architecture; batch size and context length stay dynamic.
+        """
         if self.backend_name != "torch" or self.model is None:
             raise RuntimeError("ONNX export requires a loaded torch backend")
         batch = self._batch(example, target=target).to(self.device)
         return export_onnx(self.model, batch, path, opset_version=opset_version)
 
     def save_pretrained(self, directory):
+        """Write ``model.safetensors`` and ``config.json`` to a directory.
+
+        The directory loads back through the normal constructor and follows
+        the same layout as published Hugging Face checkpoints.
+        """
         if self.model is None or self.backend_name != "torch":
             raise RuntimeError("save_pretrained requires a torch model")
         save_checkpoint(self.model, directory, self.config)
 
     def fit_head(self, examples, **kwargs):
+        """Fit a named :class:`~relational_transformers.TaskHead` over frozen features.
+
+        Each example is encoded once with the frozen backbone, then a linear
+        head is trained on the resulting ``[d_model]`` target features. The
+        fitted head is stored under ``self.heads[task]`` and served through
+        ``predict(..., task_head=task)``. See
+        :func:`relational_transformers.training.fit_head` for keyword options.
+        """
         from .training import fit_head
 
         return fit_head(self, examples, **kwargs)

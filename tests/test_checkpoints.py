@@ -1,8 +1,12 @@
+import sys
+from types import SimpleNamespace
+
 import pytest
 import torch
 from safetensors.torch import save_file
 
 from relational_transformers.checkpoints import load_state
+from relational_transformers.onnx import resolve_onnx
 
 
 def test_load_state_expands_q4_nibbles(tmp_path):
@@ -46,3 +50,30 @@ def test_load_state_rejects_malformed_q4_scales(tmp_path):
 
     with pytest.raises(ValueError, match="invalid Q4 scales"):
         load_state(path)
+
+
+def test_resolve_onnx_accepts_directory_and_hub_repository(tmp_path, monkeypatch):
+    local = tmp_path / "export"
+    local.mkdir()
+    model_path = local / "model.onnx"
+    model_path.write_bytes(b"onnx")
+    calls = []
+    monkeypatch.setitem(
+        sys.modules,
+        "huggingface_hub",
+        SimpleNamespace(
+            hf_hub_download=lambda repo, filename, revision=None: calls.append(
+                (repo, filename, revision)
+            )
+            or str(model_path)
+        ),
+    )
+
+    assert resolve_onnx(local) == model_path
+    assert resolve_onnx("RelativeDB/rt-j-onnx", revision="v0.1.0") == model_path
+    assert calls == [("RelativeDB/rt-j-onnx", "model.onnx", "v0.1.0")]
+
+    empty = tmp_path / "empty"
+    empty.mkdir()
+    with pytest.raises(FileNotFoundError, match="no model.onnx"):
+        resolve_onnx(empty)

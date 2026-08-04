@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import numpy as np
 import pytest
 import torch
 
@@ -148,3 +149,32 @@ def test_training_rejects_zero_gradient_accumulation(
 
     with pytest.raises(ValueError, match="at least 1"):
         trainer.train()
+
+
+def test_head_and_full_training_accept_raw_cell_vectors_with_explicit_targets(
+    tiny_checkpoint, tmp_path
+):
+    rng = np.random.default_rng(23)
+    examples = [
+        RelationalExample(rng.normal(size=(cells, 8)).astype(np.float32), label, target=0)
+        for cells, label in ((3, 0), (5, 1))
+    ]
+    head_model = RelationalTransformer(tiny_checkpoint, device="cpu")
+    head_model.fit_head(examples, task="raw", epochs=1)
+    predictions = [
+        head_model.predict(example.input, target=example.target, task_head="raw")
+        for example in examples
+    ]
+    assert all(np.isfinite(prediction).all() for prediction in predictions)
+
+    full_model = RelationalTransformer(tiny_checkpoint, device="cpu")
+    trainer = RelationalTrainer(
+        model=full_model,
+        args=RelationalTrainingArguments(
+            output_dir=str(tmp_path / "raw-finetune"),
+            num_train_epochs=1,
+            per_device_train_batch_size=2,
+        ),
+        train_dataset=examples,
+    )
+    assert trainer.train()["steps"] == 1

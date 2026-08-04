@@ -1,0 +1,12 @@
+{
+  "architectures": ["RTJModel"],
+  "library_name": "relational-transformers",
+  "source_model": "RelativeDB/rt-j-fp16",
+  "task_type": "classification",
+  "model_file": "model.onnx",
+  "d_text": 384,
+  "d_model": 512,
+  "num_blocks": 12,
+  "num_heads": 8,
+  "dynamic_axes": ["batch", "cells"]
+}

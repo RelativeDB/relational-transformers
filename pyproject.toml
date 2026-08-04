@@ -21,18 +21,23 @@ dependencies = [
 [project.optional-dependencies]
 triton = ["triton>=3.0"]
 onnx = ["onnx>=1.16", "onnxruntime>=1.18", "onnxscript>=0.3"]
+examples = ["sentence-transformers>=3"]
 train = []
-docs = ["furo>=2024.8.6", "myst-parser>=3", "sphinx>=7", "sphinx-copybutton>=0.5"]
+docs = [
+    "myst-parser>=3",
+    "sphinx>=7",
+    "sphinx-copybutton>=0.5",
+    "sphinx-rtd-theme>=2",
+    "sphinx-inline-tabs>=2023.4.21",
+    "sphinx-toolbox>=3.5",
+]
 dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "onnx>=1.16", "onnxruntime>=1.18", "onnxscript>=0.3"]
 
 [project.urls]
-Homepage = "https://relql.com"
+Homepage = "https://relationaltransformers.com"
 Documentation = "https://relationaltransformers.com"
 Repository = "https://github.com/RelativeDB/relational-transformers"
 Issues = "https://github.com/RelativeDB/relational-transformers/issues"
-
-[project.scripts]
-relational-transformers-quantize = "relational_transformers.quantization:main"
 
 [tool.setuptools.packages.find]
 include = ["relational_transformers*"]

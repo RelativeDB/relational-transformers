@@ -1,6 +1,14 @@
 # Task-head tuning
 
+`fit_head` adapts the model to a new task without touching the backbone. Each example is
+encoded once under inference mode, then a single linear layer trains over the resulting
+`[512]` target features.
+
 ```python
+from relational_transformers import RelationalExample, RelationalTransformer
+
+model = RelationalTransformer("RelativeDB/rt-j-fp16")
+
 examples = [
     RelationalExample(input=batch_a, label=2),
     RelationalExample(input=batch_b, label=0),
@@ -12,8 +20,41 @@ head = model.fit_head(
     num_labels=5,
     problem_type="multiclass",
 )
-head.save_pretrained("issue-label-head")
+head.save_pretrained("models/issue-label-head")
+
+distribution = model.predict(new_batch, task_head="issue_label")
 ```
 
-The backbone is run under inference mode and is never updated. Supported
-problem types are binary, multiclass, multilabel, regression, and forecasting.
+When an example's input is a raw `[cells, 2*d_text]` vector array instead of a
+`RelationalBatch`, pass its target position explicitly:
+
+```python
+example = RelationalExample(input=issue_cells, label=2, target=0)
+```
+
+The fitted head registers under `model.heads["issue_label"]`, and `predict` routes
+through it whenever `task_head` names it. Supported problem types are `binary`,
+`multiclass`, `multilabel`, `regression`, and `forecasting`. Head fitting requires the
+torch backend.
+
+## Tuning Knobs
+
+`fit_head` accepts `epochs` (default 100), `learning_rate` (default `1e-3`), and
+`weight_decay` (default `1e-4`). The optimizer is AdamW over the head's parameters only,
+and every epoch is a full-batch step over the pre-encoded features, which is why hundreds
+of epochs finish quickly. Because features are encoded once up front, the cost of a
+fitting run is one forward pass per example plus a small optimization loop.
+
+## Reloading a Saved Head
+
+`TaskHead.save_pretrained` writes `head.safetensors` and `head_config.json`. Reattach a
+saved head to any model with the same `d_model`:
+
+```python
+from relational_transformers import TaskHead
+
+model.heads["issue_label"] = TaskHead.from_pretrained("models/issue-label-head")
+```
+
+Several heads can coexist on one loaded model, each under its own task name, so one
+serving process can answer multiple prediction tasks over the same contexts.

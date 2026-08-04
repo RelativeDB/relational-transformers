@@ -17,26 +17,8 @@ jobs:
       - name: Install
         run: python -m pip install -e '.[dev,docs]'
       - name: Lint
-        run: python -m ruff check relational_transformers tests scripts
+        run: python -m ruff check relational_transformers tests scripts examples
       - name: Test with coverage
         run: python -m pytest --cov --cov-report=term-missing
       - name: Build documentation
         run: python -m sphinx -W -c docs -b html . docs/_build/html
-
-  docs-parity:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v4
-      - name: Checkout Sentence Transformers reference
-        uses: actions/checkout@v4
-        with:
-          repository: huggingface/sentence-transformers
-          path: sentence-transformers-reference
-      - uses: actions/setup-python@v5
-        with:
-          python-version: "3.12"
-      - name: Compare documentation surfaces
-        run: >-
-          python scripts/compare_docs_headers.py
-          --reference sentence-transformers-reference
-          --target .

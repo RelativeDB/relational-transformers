@@ -14,7 +14,7 @@ from .losses import (
     MultilabelClassificationLoss,
     RegressionLoss,
 )
-from .model import RelationalTransformer
+from .model import DEFAULT_MODEL, DEFAULT_ONNX_MODEL, RelationalTransformer
 from .torch_model import ModelOutput, RTJModel
 from .training import (
     RelationalExample,
@@ -26,6 +26,8 @@ from .training import (
 __version__ = "0.1.0"
 
 __all__ = [
+    "DEFAULT_MODEL",
+    "DEFAULT_ONNX_MODEL",
     "ModelOutput",
     "RTJModel",
     "RelationalBatch",

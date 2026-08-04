@@ -1,5 +1,8 @@
 """Fine-tune the complete transformer on a small churn dataset."""
 
+import math
+import os
+
 from _common import customer_context
 from sentence_transformers import SentenceTransformer
 
@@ -37,7 +40,7 @@ trainer = RelationalTrainer(
     model=model,
     args=RelationalTrainingArguments(
         output_dir="models/churn",
-        num_train_epochs=2,
+        num_train_epochs=int(os.environ.get("RT_EXAMPLE_EPOCHS", "2")),
         per_device_train_batch_size=2,
         learning_rate=2e-5,
     ),
@@ -45,4 +48,7 @@ trainer = RelationalTrainer(
     task="churn",
     problem_type="binary",
 )
-print(trainer.train())
+result = trainer.train()
+assert result["steps"] > 0
+assert math.isfinite(result["train_loss"])
+print(result)

@@ -40,5 +40,10 @@ evaluator = SequentialEvaluator(
         AblationEvaluator(examples, {"support": [5], "latest_order": [4]}),
     ]
 )
-for metric, value in evaluator(model).items():
+metrics = evaluator(model)
+assert 0.0 <= metrics["accuracy"] <= 1.0
+assert 0.0 <= metrics["precision"] <= 1.0
+assert 0.0 <= metrics["recall"] <= 1.0
+assert 0.0 <= metrics["f1"] <= 1.0
+for metric, value in metrics.items():
     print(f"{metric}: {value:.4f}")

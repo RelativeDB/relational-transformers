@@ -1,5 +1,8 @@
 """Fit a lightweight multiclass head over frozen relational features."""
 
+import os
+
+import numpy as np
 from _common import issue_cells
 from sentence_transformers import SentenceTransformer
 
@@ -16,7 +19,7 @@ training_rows = [
     ("Update migration guide", "Show the v2 schema migration", 2),
 ]
 examples = [
-    RelationalExample(issue_cells(encoder, title=title, body=body), label)
+    RelationalExample(issue_cells(encoder, title=title, body=body), label, target=0)
     for title, body, label in training_rows
 ]
 head = model.fit_head(
@@ -24,7 +27,7 @@ head = model.fit_head(
     task="issue_type",
     num_labels=3,
     problem_type="multiclass",
-    epochs=100,
+    epochs=int(os.environ.get("RT_EXAMPLE_EPOCHS", "100")),
     learning_rate=1e-3,
 )
 head.save_pretrained("models/issue-type-head")
@@ -35,4 +38,7 @@ test_issue = issue_cells(
     body="Login returns a state mismatch after the session sits idle.",
 )
 probabilities = model.predict(test_issue, target=0, task_head="issue_type")
-print(dict(zip(("bug", "feature", "documentation"), probabilities, strict=True)))
+assert probabilities.shape == (1, 3)
+assert np.isfinite(probabilities).all()
+np.testing.assert_allclose(probabilities.sum(axis=1), [1.0], rtol=1e-5, atol=1e-5)
+print(dict(zip(("bug", "feature", "documentation"), probabilities[0], strict=True)))

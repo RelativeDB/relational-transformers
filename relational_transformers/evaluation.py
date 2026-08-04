@@ -17,6 +17,10 @@ def _labels(examples: Sequence[RelationalExample]) -> np.ndarray:
     return np.asarray([example.label for example in examples])
 
 
+def _inputs(model, examples: Sequence[RelationalExample]) -> list:
+    return [model._batch(example.input, target=example.target) for example in examples]
+
+
 @dataclass
 class BinaryClassificationEvaluator:
     """Evaluate binary predictions at a configurable probability threshold."""
@@ -29,7 +33,7 @@ class BinaryClassificationEvaluator:
         labels = _labels(self.examples).astype(bool)
         probabilities = np.asarray(
             model.predict(
-                [example.input for example in self.examples],
+                _inputs(model, self.examples),
                 task_head=self.task_head,
             )
         ).reshape(-1)
@@ -59,7 +63,7 @@ class RegressionEvaluator:
         labels = _labels(self.examples).astype(np.float64).reshape(-1)
         predictions = np.asarray(
             model.predict(
-                [example.input for example in self.examples],
+                _inputs(model, self.examples),
                 task_head=self.task_head,
                 activation="identity",
             ),
@@ -86,7 +90,7 @@ class AblationEvaluator:
         if not self.ablations:
             raise ValueError("at least one named ablation is required")
         _labels(self.examples)
-        inputs = [example.input for example in self.examples]
+        inputs = _inputs(model, self.examples)
         baseline = np.asarray(model.predict(inputs, activation="identity")).reshape(-1)
         metrics = {}
         for name, positions in self.ablations.items():

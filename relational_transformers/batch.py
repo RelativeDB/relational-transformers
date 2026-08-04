@@ -63,6 +63,11 @@ class RelationalBatch:
             setattr(self, name, value)
 
     def validate(self) -> RelationalBatch:
+        """Check shapes, semantic type range, target placement, and finiteness.
+
+        Runs automatically on construction. Raises :class:`ValueError` with
+        the offending field name on the first violation.
+        """
         if self.node_idxs.ndim != 2:
             raise ValueError("node_idxs must have shape [batch, cells]")
         b, s = self.node_idxs.shape
@@ -107,6 +112,7 @@ class RelationalBatch:
         return self.text_values.shape[-1]
 
     def to(self, device: str | torch.device, dtype: torch.dtype | None = None) -> RelationalBatch:
+        """Return a copy on ``device``, optionally casting floating-point channels."""
         values = {}
         for name in BATCH_FIELDS:
             value = getattr(self, name).to(device)
@@ -116,13 +122,35 @@ class RelationalBatch:
         return RelationalBatch(**values)
 
     def as_dict(self) -> dict[str, Tensor]:
+        """Return the canonical fields as a name-to-tensor dictionary.
+
+        The keys match :data:`~relational_transformers.constants.BATCH_FIELDS`
+        and round-trip through :meth:`from_mapping`.
+        """
         return {name: getattr(self, name) for name in BATCH_FIELDS}
 
     def numpy(self) -> dict[str, np.ndarray]:
-        return {name: getattr(self, name).detach().cpu().numpy() for name in BATCH_FIELDS}
+        """Return every canonical field as a CPU numpy array."""
+        values = {}
+        for name in BATCH_FIELDS:
+            tensor = getattr(self, name).detach().cpu()
+            if tensor.dtype == torch.bfloat16:
+                tensor = tensor.float()
+            values[name] = tensor.numpy()
+        return values
 
     @classmethod
     def from_mapping(cls, values: Mapping[str, Any]) -> RelationalBatch:
+        """Build a batch from a dictionary of arrays or tensors.
+
+        Accepts numpy arrays, torch tensors, or nested lists for every field.
+        Integer index fields are cast to ``int64``, ``is_padding`` and
+        ``is_targets`` to ``bool`` (``uint8`` inputs work), and value channels
+        to floating point. Short RelativeDB aliases such as ``f2p``,
+        ``col_idxs``, ``table_idxs``, ``is_target``, ``number_v``, and
+        ``text_v`` normalize to their canonical names. Raises
+        :class:`ValueError` when a canonical field is missing.
+        """
         aliases = {
             "f2p": "f2p_nbr_idxs",
             "col_idxs": "col_name_idxs",

@@ -1,0 +1,49 @@
+name: Documentation
+
+on:
+  workflow_dispatch:
+  push:
+    branches: [main]
+    paths:
+      - "README.md"
+      - "index.rst"
+      - "docs/**"
+      - "examples/README.md"
+      - "relational_transformers/**"
+      - "pyproject.toml"
+      - ".github/workflows/docs.yml"
+  release:
+    types: [published]
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    environment:
+      name: docs
+      url: https://relationaltransformers.com/
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+      - name: Install documentation dependencies
+        run: python -m pip install -e '.[docs]'
+      - name: Build documentation strictly
+        run: python -m sphinx -W -c docs -b html . docs/_build/html
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: ${{ vars.AWS_ROLE_ARN }}
+          aws-region: us-east-1
+      - name: Deploy to S3 and invalidate CloudFront
+        env:
+          DOCS_BUCKET: ${{ vars.DOCS_BUCKET }}
+          DOCS_DISTRIBUTION_ID: ${{ vars.DOCS_DISTRIBUTION_ID }}
+        run: |
+          aws s3 sync docs/_build/html "s3://${DOCS_BUCKET}" --delete --cache-control 'public,max-age=300'
+          aws cloudfront create-invalidation --distribution-id "${DOCS_DISTRIBUTION_ID}" --paths '/*'

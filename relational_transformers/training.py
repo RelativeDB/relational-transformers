@@ -17,8 +17,16 @@ from .losses import loss_for
 
 @dataclass
 class RelationalExample:
+    """One labeled context used for training or evaluation.
+
+    ``target`` is required when ``input`` is a raw cell-vector array. Typed
+    :class:`~relational_transformers.RelationalBatch` inputs already carry
+    their target mask and leave it unset.
+    """
+
     input: Any
     label: Any
+    target: int | Sequence[int] | None = None
 
 
 @dataclass
@@ -33,6 +41,7 @@ class RelationalTrainingArguments:
     seed: int = 42
     logging_steps: int = 10
     save_strategy: str = "epoch"
+    training_backend: str = "torch"
 
 
 class TaskHead(nn.Module):
@@ -95,7 +104,10 @@ def fit_head(
     labels = []
     for example in examples:
         feature = transformer.encode(
-            example.input, output_value="target_features", convert_to_numpy=False
+            example.input,
+            target=example.target,
+            output_value="target_features",
+            convert_to_numpy=False,
         )
         features.append(feature.squeeze(0).detach().cpu())
         labels.append(example.label)
@@ -145,7 +157,14 @@ class RelationalTrainer:
         random.seed(self.args.seed)
         torch.manual_seed(self.args.seed)
         model = self.transformer.model
+        if self.args.training_backend not in ("torch", "triton"):
+            raise ValueError("training_backend must be 'torch' or 'triton'")
+        if self.args.training_backend == "triton" and self.transformer.device.type != "cuda":
+            raise RuntimeError("Triton training requires a CUDA device")
         model.train()
+        train_model = model
+        if self.args.training_backend == "triton":
+            train_model = torch.compile(model, backend="inductor", dynamic=True)
         optimizer = torch.optim.AdamW(
             model.parameters(), lr=self.args.learning_rate, weight_decay=self.args.weight_decay
         )
@@ -160,12 +179,15 @@ class RelationalTrainer:
             random.shuffle(order)
             for start in range(0, len(order), batch_size):
                 examples = order[start : start + batch_size]
-                batches = [self.transformer._batch(example.input) for example in examples]
+                batches = [
+                    self.transformer._batch(example.input, target=example.target)
+                    for example in examples
+                ]
                 batch = _collate_batches(batches).to(self.transformer.device)
                 labels = torch.as_tensor(
                     [example.label for example in examples], device=self.transformer.device
                 )
-                logits = model(batch, output="target_scores").scores
+                logits = train_model(batch, output="target_scores").scores
                 loss = _loss(logits, labels, self.problem_type)
                 (loss / accumulation).backward()
                 pending += 1

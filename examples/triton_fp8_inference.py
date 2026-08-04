@@ -1,5 +1,6 @@
 """Run batched native-FP8 inference through the Triton CUDA backend."""
 
+import numpy as np
 from _common import issue_cells
 from sentence_transformers import SentenceTransformer
 
@@ -19,4 +20,8 @@ batch = [
         body="Explain retry configuration and defaults.",
     ),
 ]
-print(model.predict(batch, target=0))
+probabilities = model.predict(batch, target=0)
+assert probabilities.shape == (2,)
+assert np.isfinite(probabilities).all()
+assert ((0.0 <= probabilities) & (probabilities <= 1.0)).all()
+print(probabilities)

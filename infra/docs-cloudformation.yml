@@ -98,6 +98,40 @@ Resources:
               StringEquals:
                 AWS:SourceArn: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${DocumentationDistribution}"
 
+  GitHubDocsDeploymentRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: relational-transformers-docs-github-deploy
+      AssumeRolePolicyDocument:
+        Version: "2012-10-17"
+        Statement:
+          - Effect: Allow
+            Principal:
+              Federated: !Sub "arn:${AWS::Partition}:iam::${AWS::AccountId}:oidc-provider/token.actions.githubusercontent.com"
+            Action: sts:AssumeRoleWithWebIdentity
+            Condition:
+              StringEquals:
+                token.actions.githubusercontent.com:aud: sts.amazonaws.com
+                token.actions.githubusercontent.com:sub: repo:RelativeDB/relational-transformers:environment:docs
+      Policies:
+        - PolicyName: deploy-documentation
+          PolicyDocument:
+            Version: "2012-10-17"
+            Statement:
+              - Effect: Allow
+                Action:
+                  - s3:ListBucket
+                Resource: !GetAtt DocumentationBucket.Arn
+              - Effect: Allow
+                Action:
+                  - s3:DeleteObject
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: !Sub "${DocumentationBucket.Arn}/*"
+              - Effect: Allow
+                Action: cloudfront:CreateInvalidation
+                Resource: !Sub "arn:${AWS::Partition}:cloudfront::${AWS::AccountId}:distribution/${DocumentationDistribution}"
+
   ApexAlias:
     Type: AWS::Route53::RecordSet
     Properties:
@@ -147,3 +181,5 @@ Outputs:
     Value: !GetAtt DocumentationDistribution.DomainName
   DocumentationUrl:
     Value: !Sub "https://${DomainName}"
+  GitHubDocsRoleArn:
+    Value: !GetAtt GitHubDocsDeploymentRole.Arn

@@ -4,8 +4,10 @@ __pycache__/
 .pytest_cache/
 .ruff_cache/
 .coverage
+coverage.json
 .coverage.*
 .venv/
+.venv-docs/
 .idea/
 build/
 dist/

@@ -28,7 +28,6 @@ python -m pip install -e ".[dev,onnx]" sentence-transformers
 - `export_onnx.py` — export dynamic batch/sequence axes and verify ONNX Runtime
 - `inspect_meta_model.py` — inspect model dimensions without allocating weights
 - `triton_fp8_inference.py` — run native FP8 weights with Triton on CUDA
-- `quantize_fp8.py` — produce classification and regression FP8 checkpoints
 
 Run any file from this directory or from the repository root, for example:
 

@@ -1,17 +1,18 @@
 from __future__ import annotations
 
 import json
-import sys
 
 import numpy as np
 import pytest
 import torch
 from safetensors.torch import save_file
 
+import relational_transformers.model as model_module
 from relational_transformers import (
     AblationEvaluator,
     BinaryClassificationEvaluator,
     RelationalBatch,
+    RelationalExample,
     RelationalTrainer,
     RelationalTrainingArguments,
     RelationalTransformer,
@@ -19,7 +20,6 @@ from relational_transformers import (
 from relational_transformers.checkpoints import load_state, model_dimensions, resolve_config
 from relational_transformers.losses import loss_for
 from relational_transformers.model import _collate_batches
-from relational_transformers.quantization import main as quantization_main
 
 
 @pytest.mark.parametrize(
@@ -97,8 +97,6 @@ def test_high_level_backend_and_output_errors(tiny_checkpoint, customer_context_
     context = customer_context_factory()
     with pytest.raises(ValueError, match="backend must be"):
         RelationalTransformer(tiny_checkpoint, backend="unknown")
-    with pytest.raises(ValueError, match="Triton backend"):
-        RelationalTransformer(tiny_checkpoint, backend="triton", task="regression")
 
     model = RelationalTransformer(tiny_checkpoint, device="cpu")
     with pytest.raises(KeyError, match="no fitted task head"):
@@ -120,6 +118,25 @@ def test_default_device_falls_back_to_cpu(monkeypatch):
     monkeypatch.setattr(torch.backends.mps, "is_available", lambda: False)
 
     assert RelationalTransformer._default_device() == "cpu"
+
+
+def test_onnx_backend_defaults_to_published_hub_model(monkeypatch):
+    captured = {}
+
+    class FakeOnnxBackend:
+        def __init__(self, path, providers=None, revision=None):
+            captured.update(path=str(path), providers=providers, revision=revision)
+
+    monkeypatch.setattr(model_module, "OnnxBackend", FakeOnnxBackend)
+
+    model = RelationalTransformer(backend="onnx", revision="v0.1.0")
+
+    assert model.model_name_or_path == "RelativeDB/rt-j-onnx"
+    assert captured == {
+        "path": "RelativeDB/rt-j-onnx",
+        "providers": None,
+        "revision": "v0.1.0",
+    }
 
 
 def test_collation_rejects_already_batched_context(customer_context_factory):
@@ -161,20 +178,27 @@ def test_training_requires_torch_backend_and_nonempty_data(tiny_checkpoint):
         model.fit_head([], task="empty")
 
 
-def test_quantization_cli_writes_selected_task(tiny_checkpoint, tmp_path, monkeypatch):
-    output = tmp_path / "fp8-cli"
-    monkeypatch.setattr(
-        sys,
-        "argv",
-        [
-            "relational-transformers-quantize",
-            str(tiny_checkpoint),
-            str(output),
-            "--task",
-            "classification",
-        ],
+def test_training_backend_validation_is_explicit(
+    tiny_checkpoint, customer_context_factory, tmp_path
+):
+    example = RelationalExample(customer_context_factory(), 1)
+    model = RelationalTransformer(tiny_checkpoint, device="cpu")
+    invalid = RelationalTrainer(
+        model=model,
+        args=RelationalTrainingArguments(
+            output_dir=str(tmp_path / "invalid"), training_backend="unknown"
+        ),
+        train_dataset=[example],
     )
+    with pytest.raises(ValueError, match="training_backend"):
+        invalid.train()
 
-    assert quantization_main() == 0
-    assert (output / "classification" / "model.fp8.safetensors").is_file()
-    assert not (output / "regression").exists()
+    cuda_only = RelationalTrainer(
+        model=model,
+        args=RelationalTrainingArguments(
+            output_dir=str(tmp_path / "triton"), training_backend="triton"
+        ),
+        train_dataset=[example],
+    )
+    with pytest.raises(RuntimeError, match="requires a CUDA"):
+        cuda_only.train()

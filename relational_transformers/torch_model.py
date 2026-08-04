@@ -1,7 +1,6 @@
 """Portable dense PyTorch implementation of RT-J.
 
-The parameter names intentionally match the published checkpoints and the
-reference implementation in ``stanford-star/rt-j``.
+The parameter names intentionally match the published RelativeDB checkpoints.
 """
 
 from __future__ import annotations

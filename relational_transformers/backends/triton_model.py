@@ -326,7 +326,11 @@ class RTJTriton:
         all_scores = scores.float().cpu().numpy().reshape(batch["node_idxs"].shape)
         targets = batch["is_targets"].astype(bool)
         return np.asarray(
-            [all_scores[b][targets[b]][0] for b in range(all_scores.shape[0])], np.float32
+            [
+                all_scores[b][targets[b]][0] if targets[b].any() else 0.0
+                for b in range(len(targets))
+            ],
+            np.float32,
         )
 
 

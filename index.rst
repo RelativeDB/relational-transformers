@@ -23,7 +23,6 @@ owns the model.
    docs/relational_transformer/pretrained_models
    docs/relational_transformer/dataset_overview
    docs/relational_transformer/loss_overview
-   docs/relational_transformer/quantization
    docs/relational_transformer/training_overview
    docs/relational_transformer/training/overview
    docs/relational_transformer/training/head_tuning

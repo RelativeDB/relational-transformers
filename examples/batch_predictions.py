@@ -28,5 +28,8 @@ issues = [
     ),
 ]
 
-for index, probability in enumerate(model.predict(issues, target=0), start=1):
+probabilities = model.predict(issues, target=0)
+assert probabilities.shape == (3,)
+assert ((0.0 <= probabilities) & (probabilities <= 1.0)).all()
+for index, probability in enumerate(probabilities, start=1):
     print(f"issue {index}: P(bug)={probability:.1%}")

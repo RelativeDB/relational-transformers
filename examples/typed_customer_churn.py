@@ -17,5 +17,7 @@ context = customer_context(
     support_summary="Invoices fail after the saved card is updated.",
 )
 
-print(f"P(customer churns) = {model.predict(context):.1%}")
+probability = model.predict(context)
+assert 0.0 <= probability <= 1.0
+print(f"P(customer churns) = {probability:.1%}")
 print("cells:", context.sequence_length, "batch size:", context.batch_size)

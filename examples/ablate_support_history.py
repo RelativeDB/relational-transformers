@@ -19,6 +19,8 @@ context = customer_context(
 
 # Cell 5 is the support summary. The caller chooses the ablation explicitly.
 full, without_support = model.predict([context, context.ablate([5])])
+assert 0.0 <= full <= 1.0
+assert 0.0 <= without_support <= 1.0
 print(f"full context:    {full:.1%}")
 print(f"without support: {without_support:.1%}")
 print(f"change:          {without_support - full:+.1%}")

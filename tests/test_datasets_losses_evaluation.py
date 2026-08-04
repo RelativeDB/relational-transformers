@@ -120,3 +120,16 @@ def test_regression_evaluator_reports_nan_r2_for_constant_labels(
     ]
 
     assert np.isnan(RegressionEvaluator(constant)(model)["r2"])
+
+
+def test_evaluators_accept_raw_cell_vectors_with_explicit_targets(tiny_checkpoint):
+    rng = np.random.default_rng(31)
+    evaluation_examples = [
+        RelationalExample(rng.normal(size=(cells, 8)).astype(np.float32), label, target=0)
+        for cells, label in ((3, 0), (5, 1))
+    ]
+    model = RelationalTransformer(tiny_checkpoint, device="cpu")
+
+    metrics = BinaryClassificationEvaluator(evaluation_examples)(model)
+
+    assert 0.0 <= metrics["accuracy"] <= 1.0

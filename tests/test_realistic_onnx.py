@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import numpy as np
 import pytest
+import torch
 
 from relational_transformers import RelationalTransformer
 
@@ -30,6 +31,24 @@ def test_onnx_handles_dynamic_batch_and_context_lengths(
     actual = onnx_model.predict(contexts, activation="identity")
 
     np.testing.assert_allclose(actual, expected, rtol=1e-5, atol=1e-6)
+
+
+def test_onnx_accepts_bfloat16_cell_embeddings(
+    tiny_checkpoint, customer_context_factory, tmp_path
+):
+    pytest.importorskip("onnx")
+    pytest.importorskip("onnxruntime")
+    torch_model = RelationalTransformer(tiny_checkpoint, device="cpu")
+    context = customer_context_factory()
+    path = torch_model.export_onnx(tmp_path / "customer-risk.onnx", context)
+    onnx_model = RelationalTransformer(path, backend="onnx")
+    expected = torch_model.predict(context, activation="identity")
+    context.text_values = context.text_values.to(torch.bfloat16)
+    context.col_name_values = context.col_name_values.to(torch.bfloat16)
+
+    actual = onnx_model.predict(context, activation="identity")
+
+    np.testing.assert_allclose(actual, expected, rtol=2e-3, atol=2e-3)
 
 
 def test_onnx_rejects_outputs_not_present_in_export(
