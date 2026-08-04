@@ -151,7 +151,7 @@ class RTJModel(nn.Module):
             {name: RMSNorm(d_model, device=device) for name in (*SEMANTICS, "col_name")}
         )
         self.mask_embs = nn.ParameterDict(
-            {name: nn.Parameter(torch.empty(d_model, device=device)) for name in SEMANTICS}
+            {name: nn.Parameter(torch.randn(d_model, device=device)) for name in SEMANTICS}
         )
         self.blocks = nn.ModuleList(
             [
