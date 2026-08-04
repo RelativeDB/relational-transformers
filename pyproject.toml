@@ -1,0 +1,49 @@
+[build-system]
+requires = ["setuptools>=77"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "relational-transformers"
+version = "0.1.0"
+description = "Prediction and fine-tuning over user-provided relational cell tensors"
+readme = "README.md"
+requires-python = ">=3.10"
+license = "Apache-2.0"
+authors = [{name = "RelativeDB"}]
+dependencies = [
+  "huggingface-hub>=0.23",
+  "numpy>=1.23",
+  "safetensors>=0.4",
+  "torch>=2.2",
+  "tqdm>=4.66",
+]
+
+[project.optional-dependencies]
+triton = ["triton>=3.0"]
+onnx = ["onnx>=1.16", "onnxruntime>=1.18", "onnxscript>=0.3"]
+train = []
+docs = ["furo>=2024.8.6", "myst-parser>=3", "sphinx>=7", "sphinx-copybutton>=0.5"]
+dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "onnx>=1.16", "onnxruntime>=1.18", "onnxscript>=0.3"]
+
+[project.urls]
+Homepage = "https://relql.com"
+Documentation = "https://relational-transformers.readthedocs.io"
+Repository = "https://github.com/RelativeDB/relational-transformers"
+Issues = "https://github.com/RelativeDB/relational-transformers/issues"
+
+[tool.setuptools.packages.find]
+include = ["relational_transformers*"]
+
+[tool.setuptools.package-data]
+relational_transformers = ["py.typed"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.ruff]
+line-length = 100
+target-version = "py310"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
