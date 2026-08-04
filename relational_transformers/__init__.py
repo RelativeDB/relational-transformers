@@ -3,7 +3,6 @@
 from .batch import RelationalBatch
 from .datasets import RelationalDataset
 from .evaluation import (
-    AblationEvaluator,
     BinaryClassificationEvaluator,
     RegressionEvaluator,
     SequentialEvaluator,
@@ -37,7 +36,6 @@ __all__ = [
     "RelationalTrainingArguments",
     "RelationalTransformer",
     "TaskHead",
-    "AblationEvaluator",
     "BinaryClassificationEvaluator",
     "RegressionEvaluator",
     "SequentialEvaluator",

@@ -37,11 +37,12 @@ without_support = batch.ablate(support_positions)
 
 ## Measuring Over a Dataset
 
-`AblationEvaluator` runs named ablations across a set of examples and reports the mean
-and mean absolute prediction delta per group:
+The `relational-transformers-utils` package provides `AblationEvaluator`, which runs
+named ablations across a set of examples and reports the mean and mean absolute
+prediction delta per group:
 
 ```python
-from relational_transformers import AblationEvaluator
+from relational_transformers_utils import AblationEvaluator
 
 evaluator = AblationEvaluator(
     examples,

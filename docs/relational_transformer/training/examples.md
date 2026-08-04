@@ -44,21 +44,24 @@ Script: [finetune_churn.py](https://github.com/RelativeDB/relational-transformer
 
 ## Evaluation During Training
 
-Combine task metrics with ablation deltas to watch what fine-tuning changes:
+Combine several evaluators so one call reports every validation metric:
 
 ```python
 from relational_transformers import (
-    AblationEvaluator,
     BinaryClassificationEvaluator,
+    RegressionEvaluator,
     SequentialEvaluator,
 )
 
 evaluator = SequentialEvaluator([
-    BinaryClassificationEvaluator(validation_examples),
-    AblationEvaluator(validation_examples, ablations={"support": support_positions}),
+    BinaryClassificationEvaluator(churn_examples),
+    RegressionEvaluator(spend_examples),
 ])
 metrics = evaluator(model)
 ```
+
+`AblationEvaluator` from the `relational-transformers-utils` package composes the same
+way and adds named context-ablation deltas.
 
 Script: [evaluate_churn.py](https://github.com/RelativeDB/relational-transformers/blob/main/examples/evaluate_churn.py)
 

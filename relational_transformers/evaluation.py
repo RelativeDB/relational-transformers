@@ -1,9 +1,9 @@
-"""Evaluators for prediction, regression, and explicit context ablation."""
+"""Evaluators for prediction and regression."""
 
 from __future__ import annotations
 
 import math
-from collections.abc import Mapping, Sequence
+from collections.abc import Sequence
 from dataclasses import dataclass
 
 import numpy as np
@@ -77,29 +77,6 @@ class RegressionEvaluator:
             "rmse": float(np.sqrt(np.square(residual).mean())),
             "r2": float(r2),
         }
-
-
-@dataclass
-class AblationEvaluator:
-    """Measure prediction deltas for caller-defined groups of cell positions."""
-
-    examples: Sequence[RelationalExample]
-    ablations: Mapping[str, Sequence[int]]
-
-    def __call__(self, model) -> dict[str, float]:
-        if not self.ablations:
-            raise ValueError("at least one named ablation is required")
-        _labels(self.examples)
-        inputs = _inputs(model, self.examples)
-        baseline = np.asarray(model.predict(inputs, activation="identity")).reshape(-1)
-        metrics = {}
-        for name, positions in self.ablations.items():
-            ablated = [example.input.ablate(positions) for example in self.examples]
-            changed = np.asarray(model.predict(ablated, activation="identity")).reshape(-1)
-            difference = changed - baseline
-            metrics[f"{name}_mean_delta"] = float(difference.mean())
-            metrics[f"{name}_mean_absolute_delta"] = float(np.abs(difference).mean())
-        return metrics
 
 
 class SequentialEvaluator:

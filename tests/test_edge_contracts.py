@@ -9,7 +9,6 @@ from safetensors.torch import save_file
 
 import relational_transformers.model as model_module
 from relational_transformers import (
-    AblationEvaluator,
     BinaryClassificationEvaluator,
     RelationalBatch,
     RelationalExample,
@@ -151,8 +150,6 @@ def test_evaluator_and_loss_require_supported_nonempty_inputs(tiny_checkpoint):
     model = RelationalTransformer(tiny_checkpoint, device="cpu")
     with pytest.raises(ValueError, match="at least one example"):
         BinaryClassificationEvaluator([])(model)
-    with pytest.raises(ValueError, match="named ablation"):
-        AblationEvaluator([object()], {})(model)
     with pytest.raises(ValueError, match="unsupported problem_type"):
         loss_for("survival")
 

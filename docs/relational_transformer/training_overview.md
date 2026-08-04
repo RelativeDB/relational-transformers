@@ -116,8 +116,10 @@ Run an evaluator before and after training so you have a measured delta:
 | --- | --- | --- |
 | `BinaryClassificationEvaluator` | binary | accuracy, precision, recall, F1 at a threshold |
 | `RegressionEvaluator` | regression, forecasting | MAE, RMSE, R² |
-| `AblationEvaluator` | any | mean and mean absolute prediction delta per named ablation |
 | `SequentialEvaluator` | composition | merged metrics from several evaluators |
+
+The `relational-transformers-utils` package adds `AblationEvaluator` for named
+context-ablation deltas over a dataset.
 
 Evaluators are callables that take the model and return a metric dictionary.
 `SequentialEvaluator` raises on duplicate metric names, so combined results stay

@@ -1,14 +1,13 @@
 """Evaluate classification quality and named context ablations."""
 
+import numpy as np
 from _common import customer_context
 from sentence_transformers import SentenceTransformer
 
 from relational_transformers import (
-    AblationEvaluator,
     BinaryClassificationEvaluator,
     RelationalExample,
     RelationalTransformer,
-    SequentialEvaluator,
 )
 
 encoder = SentenceTransformer("sentence-transformers/all-MiniLM-L12-v2")
@@ -34,16 +33,23 @@ examples = [
     )
     for customer_id, tenure, plan, amount, support, label in rows
 ]
-evaluator = SequentialEvaluator(
-    [
-        BinaryClassificationEvaluator(examples),
-        AblationEvaluator(examples, {"support": [5], "latest_order": [4]}),
-    ]
-)
-metrics = evaluator(model)
+
+metrics = BinaryClassificationEvaluator(examples)(model)
 assert 0.0 <= metrics["accuracy"] <= 1.0
 assert 0.0 <= metrics["precision"] <= 1.0
 assert 0.0 <= metrics["recall"] <= 1.0
 assert 0.0 <= metrics["f1"] <= 1.0
+
+# Named ablations: pad out cell groups and compare identity-activation scores.
+# relational-transformers-utils packages this workflow as AblationEvaluator.
+inputs = [example.input for example in examples]
+baseline = np.asarray(model.predict(inputs, activation="identity")).reshape(-1)
+for name, positions in {"support": [5], "latest_order": [4]}.items():
+    ablated = [batch.ablate(positions) for batch in inputs]
+    changed = np.asarray(model.predict(ablated, activation="identity")).reshape(-1)
+    difference = changed - baseline
+    metrics[f"{name}_mean_delta"] = float(difference.mean())
+    metrics[f"{name}_mean_absolute_delta"] = float(np.abs(difference).mean())
+
 for metric, value in metrics.items():
     print(f"{metric}: {value:.4f}")

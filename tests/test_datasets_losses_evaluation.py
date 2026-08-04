@@ -7,7 +7,6 @@ import pytest
 import torch
 
 from relational_transformers import (
-    AblationEvaluator,
     BinaryClassificationEvaluator,
     BinaryClassificationLoss,
     MulticlassClassificationLoss,
@@ -66,25 +65,22 @@ def test_public_losses_cover_supported_task_shapes():
         assert loss >= 0
 
 
-def test_prediction_and_ablation_evaluators_return_finite_metrics(
+def test_prediction_evaluators_return_finite_metrics(
     tiny_checkpoint, customer_context_factory
 ):
     model = RelationalTransformer(tiny_checkpoint, device="cpu")
     evaluation_examples = examples(customer_context_factory)
     binary = BinaryClassificationEvaluator(evaluation_examples)
     regression = RegressionEvaluator(evaluation_examples)
-    ablation = AblationEvaluator(evaluation_examples, {"support": [11, 12]})
 
     binary_metrics = binary(model)
     regression_metrics = regression(model)
-    ablation_metrics = ablation(model)
 
     assert set(binary_metrics) == {"accuracy", "precision", "recall", "f1"}
     assert 0.0 <= binary_metrics["accuracy"] <= 1.0
     assert regression_metrics["mae"] >= 0.0
     assert regression_metrics["rmse"] >= 0.0
     assert math.isfinite(regression_metrics["r2"])
-    assert ablation_metrics["support_mean_absolute_delta"] >= 0.0
 
 
 def test_sequential_evaluator_merges_metrics_and_rejects_collisions(
@@ -95,14 +91,14 @@ def test_sequential_evaluator_merges_metrics_and_rejects_collisions(
     combined = SequentialEvaluator(
         [
             BinaryClassificationEvaluator(evaluation_examples),
-            AblationEvaluator(evaluation_examples, {"support": [11, 12]}),
+            RegressionEvaluator(evaluation_examples),
         ]
     )
 
     metrics = combined(model)
 
     assert "accuracy" in metrics
-    assert "support_mean_delta" in metrics
+    assert "mae" in metrics
     with pytest.raises(ValueError, match="at least one evaluator"):
         SequentialEvaluator([])
     duplicate = SequentialEvaluator([BinaryClassificationEvaluator(evaluation_examples)] * 2)

@@ -19,13 +19,6 @@ they fit in a training run.
    :members:
 ```
 
-## AblationEvaluator
-
-```{eval-rst}
-.. autoclass:: relational_transformers.AblationEvaluator
-   :members:
-```
-
 ## SequentialEvaluator
 
 ```{eval-rst}
