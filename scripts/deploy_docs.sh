@@ -4,8 +4,9 @@ set -euo pipefail
 aws_profile="${AWS_PROFILE:-personal}"
 stack_name="${DOCS_STACK_NAME:-relational-transformers-docs}"
 aws_region="${AWS_REGION:-us-east-1}"
+python_bin="${PYTHON:-python3}"
 
-python -m sphinx -E -W -c docs -b html . docs/_build/html
+"$python_bin" -m sphinx -E -W -c docs -b html . docs/_build/html
 
 aws cloudformation deploy \
   --profile "$aws_profile" \

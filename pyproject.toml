@@ -27,7 +27,7 @@ dev = ["pytest>=8", "pytest-cov>=5", "ruff>=0.6", "onnx>=1.16", "onnxruntime>=1.
 
 [project.urls]
 Homepage = "https://relql.com"
-Documentation = "https://relational-transformers.readthedocs.io"
+Documentation = "https://relationaltransformers.com"
 Repository = "https://github.com/RelativeDB/relational-transformers"
 Issues = "https://github.com/RelativeDB/relational-transformers/issues"
 
