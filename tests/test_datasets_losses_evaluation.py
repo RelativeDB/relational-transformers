@@ -7,9 +7,9 @@ import pytest
 import torch
 
 from relational_transformers import (
-    ListwiseRankingLoss,
     BinaryClassificationEvaluator,
     BinaryClassificationLoss,
+    ListwiseRankingLoss,
     MulticlassClassificationLoss,
     MultilabelClassificationLoss,
     RegressionEvaluator,

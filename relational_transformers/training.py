@@ -279,7 +279,7 @@ class FineTunedHead:
         return str(path)
 
     @staticmethod
-    def load(path) -> "FineTunedHead":
+    def load(path) -> FineTunedHead:
         import numpy as np
         from safetensors.numpy import load_file
 
