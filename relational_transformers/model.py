@@ -124,8 +124,8 @@ class RelationalTransformer:
                 sequence of single-context inputs to collate.
             output: ``"target_scores"``, ``"token_scores"``,
                 ``"target_features"``, ``"target_scores_and_text"``, or
-                ``"embeddings"``. The ONNX and Triton backends serve
-                ``"target_scores"`` only.
+                ``"embeddings"``. ONNX serves ``"target_scores"`` only;
+                Triton serves every view except ``"embeddings"``.
             target: Target cell position(s), required only for raw cell
                 arrays.
 
@@ -140,9 +140,18 @@ class RelationalTransformer:
                 raise ValueError("ONNX runtime currently exposes target_scores")
             return ModelOutput(scores=torch.from_numpy(self.backend.predict(batch)))
         if self.backend_name == "triton":
-            if output != "target_scores":
-                raise ValueError("Triton currently exposes target_scores")
-            return ModelOutput(scores=torch.from_numpy(self.backend.predict(batch.numpy())))
+            result = self.backend.predict(batch.numpy(), output=output)
+            if output == "target_scores":
+                return ModelOutput(scores=torch.from_numpy(result))
+            if output == "token_scores":
+                return ModelOutput(token_scores=torch.from_numpy(result))
+            if output == "target_features":
+                return ModelOutput(features=torch.from_numpy(result))
+            if output == "target_scores_and_text":
+                scores, text = result
+                return ModelOutput(scores=torch.from_numpy(scores),
+                                   target_text=torch.from_numpy(text))
+            raise ValueError(f"Triton does not expose output {output!r}")
         with torch.inference_mode():
             return self.model(batch.to(self.device), output=output)
 

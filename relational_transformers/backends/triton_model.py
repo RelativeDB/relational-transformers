@@ -15,6 +15,7 @@ from safetensors import safe_open
 from .triton_data import build_worklists, load_npz, sort_batch
 from .triton_kernels import (
     combine_embeddings_kernel,
+    gather_rows,
     linear,
     linear_gather,
     prepare_kv_kernel,
@@ -318,20 +319,70 @@ class RTJTriton:
         )
         return self.scores[:rows]
 
-    def predict(self, raw):
-        batch, _, gpu, work = self.prepare(raw)
+    @staticmethod
+    def _restore_order(values, order):
+        restored = np.empty_like(values)
+        for row, indices in enumerate(order):
+            restored[row, indices] = values[row]
+        return restored
+
+    @staticmethod
+    def _target_rows(values, batch, target_indices):
+        bsz, seq = batch["node_idxs"].shape
+        output = np.zeros((bsz, values.shape[1]), np.float32)
+        for value, flat_index in zip(values, target_indices, strict=True):
+            output[int(flat_index) // seq] += value
+        return output
+
+    def predict(self, raw, output="target_scores"):
+        if output not in ("target_scores", "token_scores", "target_features",
+                          "target_scores_and_text"):
+            raise ValueError(f"Triton does not expose output {output!r}")
+        batch, order, gpu, work = self.prepare(raw)
         rows = batch["node_idxs"].size
         scores = self.forward_prepared(gpu, work, rows)
+        targets = batch["is_targets"].astype(bool)
+        target_indices = np.flatnonzero(targets.reshape(-1)).astype(np.int64)
+        target_gpu = self.device_array(target_indices)
+        extra = None
+        if output == "target_features":
+            gathered = torch.empty(
+                (len(target_indices), D_MODEL), dtype=torch.float32,
+                device="cuda")
+            if len(target_indices):
+                gather_rows(self.tmp[:rows], target_gpu, gathered)
+            extra = gathered
+        elif output == "target_scores_and_text":
+            gathered = torch.empty(
+                (len(target_indices), D_TEXT), dtype=torch.float32,
+                device="cuda")
+            if len(target_indices):
+                linear_gather(
+                    self.tmp[:rows],
+                    target_gpu,
+                    self.weight("dec_dict.text.weight"),
+                    self.weight("dec_dict.text.bias"),
+                    gathered,
+                )
+            extra = gathered
         torch.cuda.synchronize()
         all_scores = scores.float().cpu().numpy().reshape(batch["node_idxs"].shape)
-        targets = batch["is_targets"].astype(bool)
-        return np.asarray(
+        if output == "token_scores":
+            return self._restore_order(all_scores, order)
+        target_scores = np.asarray(
             [
-                all_scores[b][targets[b]][0] if targets[b].any() else 0.0
+                all_scores[b][targets[b]].sum() if targets[b].any() else 0.0
                 for b in range(len(targets))
             ],
             np.float32,
         )
+        if output == "target_scores":
+            return target_scores
+        target_values = extra.float().cpu().numpy()
+        shaped = self._target_rows(target_values, batch, target_indices)
+        if output == "target_features":
+            return shaped
+        return target_scores, shaped
 
 
 def main():

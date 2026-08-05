@@ -161,6 +161,41 @@ def linear_gather(x, row_index, weight, bias, out):
 
 
 @triton.jit
+def gather_rows_kernel(
+    x_ptr,
+    row_index_ptr,
+    out_ptr,
+    rows: tl.constexpr,
+    width: tl.constexpr,
+    block: tl.constexpr,
+):
+    row = tl.program_id(0)
+    columns = tl.arange(0, block)
+    source = tl.load(row_index_ptr + row)
+    values = tl.load(
+        x_ptr + source * width + columns,
+        mask=columns < width,
+        other=0.0,
+    )
+    tl.store(out_ptr + row * width + columns, values,
+             mask=columns < width)
+
+
+def gather_rows(x, row_index, out):
+    rows = row_index.shape[0]
+    width = x.shape[1]
+    gather_rows_kernel[(rows,)](
+        x,
+        row_index,
+        out,
+        rows=rows,
+        width=width,
+        block=triton.next_power_of_2(width),
+        num_warps=8,
+    )
+
+
+@triton.jit
 def rmsnorm_kernel(
     x_ptr,
     scale_ptr,

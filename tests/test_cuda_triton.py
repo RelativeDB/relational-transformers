@@ -53,6 +53,38 @@ def test_triton_regression_matches_pytorch(customer_context_factory):
     assert actual == pytest.approx(expected, abs=5e-2)
 
 
+def test_triton_exposes_every_serving_output(customer_context_factory):
+    pytest.importorskip("triton")
+    context = customer_context_factory(d_text=384)
+    torch_model = RelationalTransformer(
+        "RelativeDB/rt-j-fp16", backend="torch", device="cuda")
+    triton_model = RelationalTransformer(
+        "RelativeDB/rt-j-fp16", backend="triton")
+
+    expected_tokens = torch_model.forward(
+        context, output="token_scores").token_scores
+    actual_tokens = triton_model.forward(
+        context, output="token_scores").token_scores
+    expected_features = torch_model.forward(
+        context, output="target_features").features
+    actual_features = triton_model.forward(
+        context, output="target_features").features
+    expected_both = torch_model.forward(
+        context, output="target_scores_and_text")
+    actual_both = triton_model.forward(
+        context, output="target_scores_and_text")
+
+    torch.testing.assert_close(actual_tokens, expected_tokens,
+                               rtol=5e-2, atol=5e-2)
+    torch.testing.assert_close(actual_features, expected_features,
+                               rtol=5e-2, atol=5e-2)
+    torch.testing.assert_close(actual_both.scores, expected_both.scores,
+                               rtol=5e-2, atol=5e-2)
+    torch.testing.assert_close(actual_both.target_text,
+                               expected_both.target_text,
+                               rtol=5e-2, atol=5e-2)
+
+
 def test_triton_returns_placeholder_for_phantom_batch_rows(customer_context_factory):
     pytest.importorskip("triton")
     real = customer_context_factory(d_text=384)
