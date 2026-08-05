@@ -3,43 +3,24 @@ Relational Transformers
 
 A relational transformer predicts a missing cell from the related data around
 it. For a churn prediction, useful evidence might sit in the customer row or
-in orders connected by foreign keys. Because the model receives this context
-in its original relational shape, each prediction follows the structure
-already present in the database.
+in orders connected by foreign keys. The model receives this context in its
+original relational shape, so each prediction follows the structure already
+present in the database.
 
 RT-J is a pretrained relational transformer with 85 million parameters. It
-learned from hundreds of databases in The Join, where schemas span fields such
-as commerce, sports, finance, and healthcare. Pretraining hides known cells
-and asks the model to reconstruct their values from the surrounding context.
-At prediction time, the requested value occupies the same masked target
-position.
+learned from hundreds of databases in The Join, where schemas span commerce,
+sports, finance, and healthcare. Pretraining hides known cells and asks the
+model to reconstruct their values from the surrounding context; at prediction
+time, the requested value occupies the same masked target position.
 
-How a cell becomes a token
---------------------------
-
-Your application creates a vector for each cell. With text, the RT-J checkpoint
-expects an embedding for the column name beside another embedding for the
-value. Scalar channels carry numbers and timestamps, with the semantic type
-selecting an input layer before projection into the 512-wide hidden space.
-
-Column names carry meaning across schemas. When two names occupy a compatible
-embedding space, a model that learned from ``review_sentiment`` can use that
-signal with a new ``customer_mood`` column. Your encoder supplies the space
-described in the checkpoint's model card.
-
-How relationships guide attention
----------------------------------
-
-Foreign keys determine which tokens can exchange information. Inside a record,
-one attention mask connects its fields; relational masks then route evidence
-along references in either direction. Repeated blocks carry information farther
-across the database graph while the attention pattern stays sparse.
-
-For each target, the application gathers a bounded context, usually between
-256 and 8,192 cells. Starting from the target record, useful joins fill the
-available budget. RelativeDB supplies retrieval and tensor construction for
-database workloads. Once the vectors and relations are ready, this library
-handles prediction, batching, ablation, and training.
+Your application owns retrieval and encoding: it gathers a bounded context of
+related cells, embeds text and column names with its own encoder, and
+normalizes scalars. This library owns everything after that point:
+prediction, batching, ablation, and training over the resulting tensors, with
+one input contract across the PyTorch, Triton, and ONNX backends. RelativeDB
+is the reference integration for database workloads, and
+`relational-transformers-utils <https://utils.relationaltransformers.com/>`_
+carries the context-construction and measurement tooling.
 
 Using the library
 -----------------
