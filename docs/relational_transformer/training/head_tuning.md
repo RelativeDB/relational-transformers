@@ -58,3 +58,29 @@ model.heads["issue_label"] = TaskHead.from_pretrained("models/issue-label-head")
 
 Several heads can coexist on one loaded model, each under its own task name, so one
 serving process can answer multiple prediction tasks over the same contexts.
+
+## Fitting Over Precomputed Features
+
+Integrations that already hold `[N, 512]` target features can skip the
+example loop and fit directly with `fit_feature_head`. It standardizes
+features per dimension, supports `binary`, `regression`, `multiclass`, and
+grouped `ranking` heads, and can seed a multiclass head from the
+checkpoint's own class-embedding basis so training starts at the zero-shot
+ordering:
+
+```python
+from relational_transformers import FineTunedHead, fit_feature_head
+
+head = fit_feature_head(
+    features, labels, "multiclass", classes=classes,
+    class_embeddings=normalized_label_embeddings,
+    text_decoder=model.model.dec_dict["text"],
+)
+head.save("models/issue-head.safetensors")
+logits = FineTunedHead.load("models/issue-head.safetensors").predict(features)
+```
+
+The saved artifact pairs the safetensors weights with a `.preproc.json`
+sidecar carrying the feature standardization, the fitted classes, and any
+preprocessing statistics the caller attached; `load` refuses a head whose
+sidecar is missing, since serving it would scale every input wrongly.

@@ -13,6 +13,7 @@ module for a supported type.
 | `multilabel` | `MultilabelClassificationLoss` | `[batch, labels]` | `[batch, labels]` |
 | `regression` | `RegressionLoss` | `[batch]` | `[batch]` |
 | `forecasting` | `RegressionLoss` | `[batch]` | `[batch]` |
+| ranking (grouped) | `ListwiseRankingLoss` | `[candidates]` + group offsets | `[candidates]` relevance |
 
 An unsupported problem type raises `ValueError` from `loss_for`.
 

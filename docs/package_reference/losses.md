@@ -25,6 +25,13 @@ logits and works in ordinary PyTorch loops.
    :members:
 ```
 
+## ListwiseRankingLoss
+
+```{eval-rst}
+.. autoclass:: relational_transformers.ListwiseRankingLoss
+   :members:
+```
+
 ## RegressionLoss
 
 ```{eval-rst}

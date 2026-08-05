@@ -38,6 +38,27 @@ class RegressionLoss(nn.Module):
         return F.huber_loss(predictions.reshape(-1), labels.float().reshape(-1), delta=self.delta)
 
 
+class ListwiseRankingLoss(nn.Module):
+    """Listwise cross entropy over candidate groups.
+
+    Scores arrive as one logit per candidate; ``group_offsets`` splits them
+    into groups. Relevance labels normalize into a target distribution per
+    group, so every group needs at least one positive.
+    """
+
+    def forward(self, logits: Tensor, labels: Tensor, group_offsets) -> Tensor:
+        scores = logits.reshape(-1)
+        labels = labels.float().reshape(-1)
+        n_groups = len(group_offsets) - 1
+        total = scores.new_zeros(())
+        for g in range(n_groups):
+            s, e = int(group_offsets[g]), int(group_offsets[g + 1])
+            log_p = F.log_softmax(scores[s:e], dim=0)
+            target = labels[s:e] / labels[s:e].sum()
+            total = total - (target * log_p).sum()
+        return total / max(n_groups, 1)
+
+
 LOSS_BY_PROBLEM_TYPE = {
     "binary": BinaryClassificationLoss,
     "multiclass": MulticlassClassificationLoss,

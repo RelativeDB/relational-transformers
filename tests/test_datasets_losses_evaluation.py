@@ -7,6 +7,7 @@ import pytest
 import torch
 
 from relational_transformers import (
+    ListwiseRankingLoss,
     BinaryClassificationEvaluator,
     BinaryClassificationLoss,
     MulticlassClassificationLoss,
@@ -129,3 +130,13 @@ def test_evaluators_accept_raw_cell_vectors_with_explicit_targets(tiny_checkpoin
     metrics = BinaryClassificationEvaluator(evaluation_examples)(model)
 
     assert 0.0 <= metrics["accuracy"] <= 1.0
+
+
+def test_listwise_ranking_loss_prefers_relevant_candidates():
+    logits = torch.tensor([3.0, -1.0, -1.0, -2.0, 4.0, -2.0])
+    labels = torch.tensor([1.0, 0.0, 0.0, 0.0, 1.0, 0.0])
+    offsets = [0, 3, 6]
+    good = ListwiseRankingLoss()(logits, labels, offsets)
+    bad = ListwiseRankingLoss()(-logits, labels, offsets)
+    assert good < bad
+    assert torch.isfinite(good) and good >= 0

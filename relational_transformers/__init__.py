@@ -9,6 +9,7 @@ from .evaluation import (
 )
 from .losses import (
     BinaryClassificationLoss,
+    ListwiseRankingLoss,
     MulticlassClassificationLoss,
     MultilabelClassificationLoss,
     RegressionLoss,
@@ -16,10 +17,12 @@ from .losses import (
 from .model import DEFAULT_MODEL, DEFAULT_ONNX_MODEL, RelationalTransformer
 from .torch_model import ModelOutput, RTJModel
 from .training import (
+    FineTunedHead,
     RelationalExample,
     RelationalTrainer,
     RelationalTrainingArguments,
     TaskHead,
+    fit_feature_head,
 )
 
 __version__ = "0.1.0"
@@ -36,10 +39,13 @@ __all__ = [
     "RelationalTrainingArguments",
     "RelationalTransformer",
     "TaskHead",
+    "FineTunedHead",
+    "fit_feature_head",
     "BinaryClassificationEvaluator",
     "RegressionEvaluator",
     "SequentialEvaluator",
     "BinaryClassificationLoss",
+    "ListwiseRankingLoss",
     "MulticlassClassificationLoss",
     "MultilabelClassificationLoss",
     "RegressionLoss",

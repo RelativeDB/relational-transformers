@@ -23,6 +23,19 @@ The narrative guides for these classes are the
    :members:
 ```
 
+## FineTunedHead
+
+```{eval-rst}
+.. autoclass:: relational_transformers.FineTunedHead
+   :members:
+```
+
+## fit_feature_head
+
+```{eval-rst}
+.. autofunction:: relational_transformers.fit_feature_head
+```
+
 ## TaskHead
 
 ```{eval-rst}
