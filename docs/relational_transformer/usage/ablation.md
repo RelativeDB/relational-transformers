@@ -37,22 +37,9 @@ without_support = batch.ablate(support_positions)
 
 ## Measuring Over a Dataset
 
-The `relational-transformers-utils` package provides `AblationEvaluator`, which runs
-named ablations across a set of examples and reports the mean and mean absolute
-prediction delta per group:
-
-```python
-from relational_transformers_utils import AblationEvaluator
-
-evaluator = AblationEvaluator(
-    examples,
-    ablations={"support_history": support_positions, "orders": order_positions},
-)
-metrics = evaluator(model)
-# => {'support_history_mean_delta': ..., 'support_history_mean_absolute_delta': ..., ...}
-```
-
-Deltas are computed on identity-activation outputs, so classification results are in
-logit space. The
-[support-history ablation example](https://github.com/RelativeDB/relational-transformers/blob/main/examples/ablate_support_history.py)
-runs this end to end on typed customer contexts.
+Dataset-level measurement lives in the
+[`relational-transformers-utils`](https://utils.relationaltransformers.com/docs/ablation.html)
+package: its `AblationEvaluator` runs named ablations across a set of
+examples and reports mean and mean absolute prediction deltas per group,
+composing with `SequentialEvaluator` from this package. This page owns only
+the primitive it builds on.
